@@ -427,10 +427,10 @@ prepare_installation() {
 	if [[ $ip_type -eq 1 ]]; then
 		domain_ip=$(ping "$xray_domain" -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
 		server_ip=$(curl -sL https://api.ip.sb/ip -4 || fail=1)
-		[[ $fail -eq 1 ]] && error "Failed to get local IP Address"
-		[[ $server_ip == $domain_ip ]] && success "The domain name has been resolved to the local IP Address" && success=1
+		[[ $fail -eq 1 ]] && error "Failed to get local IP address"
+		[[ $server_ip == $domain_ip ]] && success "The domain name has been resolved to the local IP address" && success=1
 		if [[ $success -ne 1 ]]; then
-			warning "The domain name is not resolved to the local IP Address, the certificate application may fail"
+			warning "The domain name is not resolved to the local IP address, the certificate application may fail"
 			read -rp "Continue? (yes/no): " choice
 			case $choice in
 			yes)
@@ -451,10 +451,10 @@ prepare_installation() {
 	elif [[ $ip_type -eq 2 ]]; then
 		domain_ip=$(ping6 "$xray_domain" -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
 		server_ip=$(curl -sL https://api.ip.sb/ip -6 || fail=1)
-		[[ $fail -eq 1 ]] && error "Failed to get the local IP Address"
-		[[ $server_ip == $domain_ip ]] && success "The domain name has been resolved to the local IP Address" && success=1
+		[[ $fail -eq 1 ]] && error "Failed to get the local IP address"
+		[[ $server_ip == $domain_ip ]] && success "The domain name has been resolved to the local IP address" && success=1
 		if [[ $success -ne 1 ]]; then
-			warning "The domain name is not resolved to the local IP Address, the certificate application may fail"
+			warning "The domain name is not resolved to the local IP address, the certificate application may fail"
 			read -rp "Continue? (yes/no):" choice
 			case $choice in
 			yes)
@@ -475,10 +475,10 @@ prepare_installation() {
 	elif [[ $ip_type -eq 3 ]]; then
 		domain_ip=$(ping "$xray_domain" -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
 		server_ip=$(curl -sL https://api.ip.sb/ip -4 || fail=1)
-		[[ $fail -eq 1 ]] && error "Failed to get the local IP Address (IPv4)"
-		[[ $server_ip == $domain_ip ]] && success "The domain name has been resolved to the local IP Address (IPv4)" && success=1
+		[[ $fail -eq 1 ]] && error "Failed to get the local IP address (IPv4)"
+		[[ $server_ip == $domain_ip ]] && success "The domain name has been resolved to the local IP address (IPv4)" && success=1
 		if [[ $success -ne 1 ]]; then
-			warning "The domain name is not resolved to the local IP Address (IPv4), the certificate application may fail"
+			warning "The domain name is not resolved to the local IP address (IPv4), the certificate application may fail"
 			read -rp "Continue? (yes/no):" choice
 			case $choice in
 			yes)
@@ -498,10 +498,10 @@ prepare_installation() {
 		fi
 		domain_ip6=$(ping6 "$xray_domain" -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
 		server_ip6=$(curl https://api.ip.sb/ip -6 || fail=1)
-		[[ $fail -eq 1 ]] && error "Failed to get the local IP Address (IPv6)"
-		[[ $server_ip == $domain_ip ]] && success "The domain name has been resolved to the local IP Address (IPv6)" && success=1
+		[[ $fail -eq 1 ]] && error "Failed to get the local IP address (IPv6)"
+		[[ $server_ip == $domain_ip ]] && success "The domain name has been resolved to the local IP address (IPv6)" && success=1
 		if [[ $success -ne 1 ]]; then
-			warning "The domain name is not resolved to the local IP Address (IPv6), the certificate application may fail"
+			warning "The domain name is not resolved to the local IP address (IPv6), the certificate application may fail"
 			read -rp "Continue? (yes/no):" choice
 			case $choice in
 			yes)
