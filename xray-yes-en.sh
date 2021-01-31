@@ -40,26 +40,26 @@ get_info() {
 		PM="zypper"
 		INS="zypper install -y"
 	else
-		error "不支持此操作系统，正在退出"
+		error "This operating system is not supported"
 	fi
-	source "/etc/os-release" || source "/usr/lib/os-release" || panic "不支持此操作系统，正在退出"
+	source "/etc/os-release" || source "/usr/lib/os-release" || panic "The operating system is not supported"
 	sys="$ID"
 	ver="$VERSION_ID"
 }
 
 check_env() {
 	if [[ $(ss -tnlp | grep 80) ]]; then
-		error "80端口被占用（需用于申请证书）"
+		error "Port 80 is occupied (it's required for certificate application)"
 	fi
 	if [[ $port -eq "443" && $(ss -tnlp | grep 443) ]]; then
-		error "443端口被占用"
+		error "Port 443 is occupied"
 	elif [[ $(ss -tnlp | grep $port) ]]; then
-		error "$port端口被占用"
+		error "Port $port is occupied"
 	fi
 }
 
 install_packages() {
-	info "开始安装软件包"
+	info "Install the software packages"
 	$PM update -y
 	$PM upgrade -y
 	$PM install -y wget curl
@@ -72,12 +72,12 @@ install_packages() {
 		$INS epel-release
 		$INS $rpm_packages
 	fi
-	success "软件包安装完成"
+	success "Completed the installaion of the packages"
 }
 
 check_root() {
 	if [[ $EUID -ne 0 ]]; then
-		error "无root权限，退出中"
+		error "You have to run this script as root."
 	fi
 }
 
@@ -86,7 +86,7 @@ configure_firewall() {
 	if [[ $(type -P ufw) ]]; then
 		if [[ -n $@ ]]; then
 			ufw allow "$@"/tcp || fail=1
-			success "开放 $@ 端口成功"
+			success "Successfully opened port $@"
 		else
 			ufw allow 22,80,443/tcp || fail=1
 		fi
@@ -96,18 +96,18 @@ configure_firewall() {
 		systemctl start --now firewalld
 		if [[ -n $@ ]]; then
 			firewall-offline-cmd --add-port=22/tcp --add-port=80/tcp --add-port=443/tcp || fail=1
-			success "开放 $@ 端口成功"
+			success "Successfully opened port $@"
 		else
 			firewall-offline-cmd --add-port="$@"/tcp || fail=1
 		fi
 		firewall-cmd --reload || fail=1
 	else
-		warning "请自行配置防火墙"
+		warning "Please configure the firewall by yourself."
 	fi
 	if [[ $fail -eq 1 ]]; then
-		warning "防火墙配置失败，请手动配置"
+		warning "Failed to configure the firewall, please configure by yourself."
 	elif [[ -z $@ ]]; then
-		success "防火墙配置成功"
+		success "Successfully configured the firewall"
 	fi
 }
 
@@ -225,32 +225,32 @@ EOF
 }
 
 install_acme() {
-	info "开始安装 acme.sh"
+	info "Started installing acme.sh"
 	fail=0
 	curl -L get.acme.sh | bash || fail=1
 	[[ $fail -eq 1 ]] &&
-	error "acme.sh 安装失败，退出中"
-	success "acme.sh 安装成功"
+	error "Failed to install acme.sh"
+	success "Successfully installed acme.sh"
 }
 
 install_jemalloc(){
 	wget -O jemalloc-$jemalloc_version.tar.bz2 https://github.com/jemalloc/jemalloc/releases/download/$jemalloc_version/jemalloc-$jemalloc_version.tar.bz2
 	tar -xvf jemalloc-$jemalloc_version.tar.bz2
 	cd jemalloc-$jemalloc_version
-	info "编译安装 jamalloc $jemalloc_version"
+	info "Complie jamalloc $jemalloc_version"
 	./configure
 	make -j$(nproc --all) && make install
 	ldconfig
 	cd ..
 	rm -rf jemalloc*
 	[[ ! -f '/usr/local/lib/libjemalloc.so' ]] &&
-	error "编译安装 jamalloc $jemalloc_version 失败"
-	success "编译安装 jamalloc $jemalloc_version 成功"
+	error "Failed to complie jamalloc $jemalloc_version"
+	success "Successfully complied jamalloc $jemalloc_version"
 }
 
 install_nginx() {
 	install_jemalloc
-	info "编译安装 nginx $nginx_version"
+	info "Complie nginx $nginx_version"
 	wget -O openssl-${openssl_version}.tar.gz https://www.openssl.org/source/openssl-$openssl_version.tar.gz
 	wget -O nginx-${nginx_version}.tar.gz http://nginx.org/download/nginx-${nginx_version}.tar.gz
 	[[ -d nginx-"$nginx_version" ]] && rm -rf nginx-"$nginx_version"
@@ -278,22 +278,22 @@ install_nginx() {
 	systemctl stop nginx
 	systemctl start --now nginx
 	[[ ! $(type -P nginx) ]] &&
-	error "编译安装 nginx $nginx_version 失败"
-	success "编译安装 nginx $nginx_version 成功"
+	error "Failed to complie nginx $nginx_version"
+	success "Successfully complied nginx $nginx_version"
 }
 
 issue_certificate() {
-	info "申请SSL证书"
 	fail=0
+	info "Issue a ssl certificate"
 	/root/.acme.sh/acme.sh --issue -d $xray_domain --keylength ec-256 --fullchain-file "$cert_dir/cert.pem" --key-file "$cert_dir/key.pem" --webroot "$website_dir/$xray_domain" --force || fail=1
-	[[ $fail -eq 1 ]] && error "证书申请失败"
+	[[ $fail -eq 1 ]] && error "Failed to issue a ssl certificate"
 	chmod 600 "$cert_dir/cert.pem" "$cert_dir/key.pem"
 	if [[ $(grep "nogroup" /etc/group) ]]; then
 		chown nobody:nogroup "$cert_dir/cert.pem" "$cert_dir/key.pem"
 	else
 		chown nobody:nobody "$cert_dir/cert.pem" "$cert_dir/key.pem"
 	fi
-	success "证书申请成功"
+	success "Successfully issued the ssl certificate"
 }
 
 configure_xray() {
@@ -356,27 +356,27 @@ EOF
 }
 
 install_xray() {
-	info "安装 xary"
+	info "Install xray"
 	curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s -- install
 	configure_xray
 	systemctl stop xray
 	systemctl start --now xray
-	[[ ! $(ps aux | grep xray) ]] && error "xray 安装失败"
-	success "xray 安装成功"
+	[[ ! $(ps aux | grep xray) ]] && error "Failed to install xray"
+	success "Successfully installed xray"
 }
 
 finish() {
-	success "VLESS+tcp+xtls+nginx 安装成功"
+	success "Successfully installed VLESS+tcp+xtls+nginx"
 	[[ $ip_type -eq 3 ]] && server_ip="$server_ip / $server_ip6"
 	echo ""
 	echo ""
-	echo -e "$Red xray 配置信息 $Font" | tee $info_file
-	echo -e "$Red 地址（address）:$Font $server_ip " | tee -a $info_file
-	echo -e "$Red 端口（port）：$Font $port " | tee -a $info_file
-	echo -e "$Red 用户id（UUID/密码）：$Font $uuid" | tee -a $info_file
-	echo -e "$Red 流控（flow）：$Font $xray_flow" | tee -a $info_file
+	echo -e "$Red xray configuration $Font" | tee $info_file
+	echo -e "$Red Address: $Font $server_ip " | tee -a $info_file
+	echo -e "$Red Port：$Font $port " | tee -a $info_file
+	echo -e "$Red UUID/Passwd: $Font $uuid" | tee -a $info_file
+	echo -e "$Red Flow：$Font $xray_flow" | tee -a $info_file
 	echo ""
-	echo -e " ${GreenBG}提示：${Font} 您可以在支持的设备上使用流控 ${RedBG}xtls-rprx-splice${Font} 以获得更强的性能"
+	echo -e " ${GreenBG}Tip:${Font} You can use flow control ${RedBG}xtls-rprx-splice${Font} on supported platforms to get better performance."
 }
 
 info() {
@@ -412,25 +412,25 @@ color() {
 
 prepare_installation() {
 	get_info
-	read -rp "请输入你的域名：" xray_domain
+	read -rp "Your domain: " xray_domain
 	[[ -z $xray_domain ]] && install_all
 	echo ""
-	echo "模式"
+	echo "Method:"
 	echo ""
 	echo "1. ipv4 only"
 	echo "2. ipv6 only"
 	echo "3. ipv4 & ipv6"
 	echo ""
-	read -rp "请输入数字（默认为ipv4 only）：" ip_type
+	read -rp "Enter a number (default ipv4 only): " ip_type
 	[[ -z $ip_type ]] && ip_type=1
 	if [[ $ip_type -eq 1 ]]; then
 		domain_ip=$(ping "$xray_domain" -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
 		server_ip=$(curl -sL https://api.ip.sb/ip -4 || fail=1)
-		[[ $fail -eq 1 ]] && error "本机ip获取失败"
-		[[ $server_ip == $domain_ip ]] && success "域名已经解析到本机" && success=1
+		[[ $fail -eq 1 ]] && error "Failed to get local ip"
+		[[ $server_ip == $domain_ip ]] && success "The domain name has been resolved to the local ip" && success=1
 		if [[ $success -ne 1 ]]; then
-			warning "域名没有解析到本机，证书申请可能失败"
-			read -rp "继续？（yes/no）" choice
+			warning "The domain name is not resolved to the local ip, the certificate application may fail"
+			read -rp "Continue? (yes/no): " choice
 			case $choice in
 			yes)
 				;;
@@ -450,11 +450,11 @@ prepare_installation() {
 	elif [[ $ip_type -eq 2 ]]; then
 		domain_ip=$(ping6 "$xray_domain" -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
 		server_ip=$(curl -sL https://api.ip.sb/ip -6 || fail=1)
-		[[ $fail -eq 1 ]] && error "本机ip获取失败"
-		[[ $server_ip == $domain_ip ]] && success "域名已经解析到本机" && success=1
+		[[ $fail -eq 1 ]] && error "Failed to get the local ip"
+		[[ $server_ip == $domain_ip ]] && success "The domain name has been resolved to the local ip" && success=1
 		if [[ $success -ne 1 ]]; then
-			warning "域名没有解析到本机，证书申请可能失败"
-			read -rp "继续？（yes/no）" choice
+			warning "The domain name is not resolved to the local ip, the certificate application may fail"
+			read -rp "Continue? (yes/no):" choice
 			case $choice in
 			yes)
 				;;
@@ -474,11 +474,11 @@ prepare_installation() {
 	elif [[ $ip_type -eq 3 ]]; then
 		domain_ip=$(ping "$xray_domain" -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
 		server_ip=$(curl -sL https://api.ip.sb/ip -4 || fail=1)
-		[[ $fail -eq 1 ]] && error "本机ipv4获取失败"
-		[[ $server_ip == $domain_ip ]] && success "域名已经解析到本机（ipv4）" && success=1
+		[[ $fail -eq 1 ]] && error "Failed to get the local ip (ipv4)"
+		[[ $server_ip == $domain_ip ]] && success "The domain name has been resolved to the local ip (ipv4)" && success=1
 		if [[ $success -ne 1 ]]; then
-			warning "域名没有解析到本机（ipv4），证书申请可能失败"
-			read -rp "继续？（yes/no）" choice
+			warning "The domain name is not resolved to the local ip (ipv4), the certificate application may fail"
+			read -rp "Continue? (yes/no):" choice
 			case $choice in
 			yes)
 				;;
@@ -497,11 +497,11 @@ prepare_installation() {
 		fi
 		domain_ip6=$(ping6 "$xray_domain" -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
 		server_ip6=$(curl https://api.ip.sb/ip -6 || fail=1)
-		[[ $fail -eq 1 ]] && error "本机ipv6获取失败"
-		[[ $server_ip == $domain_ip ]] && success "域名已经解析到本机（ipv6）" && success=1
+		[[ $fail -eq 1 ]] && error "Failed to get the local ip (ipv6)"
+		[[ $server_ip == $domain_ip ]] && success "The domain name has been resolved to the local ip (ipv6)" && success=1
 		if [[ $success -ne 1 ]]; then
-			warning "域名没有解析到本机（ipv6），证书申请可能失败"
-			read -rp "继续？（yes/no）" choice
+			warning "The domain name is not resolved to the local ip (ipv6), the certificate application may fail"
+			read -rp "Continue? (yes/no):" choice
 			case $choice in
 			yes)
 				;;
@@ -519,15 +519,15 @@ prepare_installation() {
 			esac
 		fi
 	else
-		error "请输入正确的数字"
+		error "Please enter a correct number"
 	fi
-	read -rp "请输入xray密码（默认使用uuid）：" uuid
-	read -rp "请输入xray端口（默认443）：" port
+	read -rp "Please enter the passwd for xray (default uuid): " uuid
+	read -rp "Please enter the port for xray (default 443): " port
 	[[ -z $port ]] && port=443
-	[[ $port > 65535 ]] && echo "请输入正确的端口" && install_all
+	[[ $port > 65535 ]] && echo "Please enter a correct port" && install_all
 	configure_firewall $port
 	configure_firewall
-	success "准备完成，即将开始安装"
+	success "Everything is ready, the installation is about to start."
 }
 
 install_all() {
@@ -546,13 +546,13 @@ install_all() {
 
 update_script() {
 	fail=0
-	ver=$(curl -sL github.com/jiuqi9997/xray-yes/raw/main/xray-yes.sh | grep "script_version=" | head -1 | awk -F '=|"' '{print $3}')
+	ver=$(curl -sL github.com/jiuqi9997/xray-yes/raw/main/xray-yes-en.sh | grep "script_version=" | head -1 | awk -F '=|"' '{print $3}')
 	if [[ $script_version != $ver ]]; then
-		wget -O xray-yes.sh github.com/jiuqi9997/xray-yes/raw/main/xray-yes.sh || fail=1
-		[[ $fail -eq 1 ]] && error "更新失败"
-		success "更新成功"
+		wget -O xray-yes-en.sh github.com/jiuqi9997/xray-yes/raw/main/xray-yes-en.sh || fail=1
+		[[ $fail -eq 1 ]] && error "Failed to update"
+		success "Successfully updated"
 		sleep 2
-		bash xray-yes.sh
+		bash xray-yes-en.sh
 		exit 0
 	fi
 }
@@ -560,17 +560,17 @@ update_script() {
 update_xray() {
 	curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s -- install
 	[[ ! $(ps aux | grep xray) ]] && error "xray 更新失败"
-	success "xray 更新成功"
+	success "Successfully updated xray"
 }
 
 mod_uuid() {
 	fail=0
 	uuid_old=$(jq '.inbounds[].settings.clients[].id' $xray_conf || fail=1)
-	[[ $(echo $uuid_old | jq '' | wc -l) > 1 ]] && error "有多个uuid，请自行修改"
-	read -rp "请输入xray密码（默认使用uuid）：" uuid
+	[[ $(echo $uuid_old | jq '' | wc -l) > 1 ]] && error "There are multiple uuids, please modify by yourself"
+	read -rp "Please enter the password for xray (default uuid): " uuid
 	[[ -z $uuid ]] && uuid=$(xray uuid)
 	sed -i "s/$uuid_old/$uuid/g" $xray_conf $info_file
-	[[ $(grep "$uuid" $xray_conf ) ]] && success "uuid 修改成功"
+	[[ $(grep "$uuid" $xray_conf ) ]] && success "Successfully modified the uuid"
 	sleep 2
 	xray_restart
 }
@@ -578,35 +578,35 @@ mod_uuid() {
 mod_port() {
 	fail=0
 	port_old=$(jq '.inbounds[].port' $xray_conf || fail=1)
-	[[ $(echo $port_old | jq '' | wc -l) > 1 ]] && error "有多个端口，请自行修改"
-	read -rp "请输入xray端口（默认443）：" port
+	[[ $(echo $port_old | jq '' | wc -l) > 1 ]] && error "There are multiple ports, please modify by yourself"
+	read -rp "Please enter the port for xray (default 443): " port
 	[[ -z $port ]] && port=443
-	[[ $port > 65535 ]] && echo "请输入正确的端口" && mod_port
+	[[ $port > 65535 ]] && echo "Please enter a correct port" && mod_port
 	sed -i "s/$port_old/$port/g" $xray_conf $info_file
-	[[ $(grep "$port" $xray_conf ) ]] && success "端口修改成功"
+	[[ $(grep "$port" $xray_conf ) ]] && success "Successfully modified the port"
 	sleep 2
 	xray_restart
 }
 
 xray_restart() {
 	systemctl restart xray
-	[[ ! $(ps aux | grep xray) ]] && error "xray 重启失败"
-	success "xray 重启成功"
+	[[ ! $(ps aux | grep xray) ]] && error "Failed to restart xray"
+	success "Successfully restarted xray"
 	sleep 2
 	main
 }
 
 show_access_log() {
-	[[ -f $xray_access_log ]] && tail -f $xray_access_log || panic "文件不存在"
+	[[ -f $xray_access_log ]] && tail -f $xray_access_log || panic "The file doesn't exist"
 }
 
 show_error_log() {
-	[[ -f $xray_error_log ]] && tail -f $xray_error_log || panic "文件不存在"
+	[[ -f $xray_error_log ]] && tail -f $xray_error_log || panic "The file doesn't exist"
 }
 
 show_configuration() {
 	[[ -f $info_file ]] && cat $info_file && exit 0
-	panic "配置信息不存在"
+	panic "The info file doesn't exist"
 }
 
 uninstall_all() {
@@ -616,39 +616,39 @@ uninstall_all() {
 	rm -rf $nginx_dir
 	rm -rf $website_dir
 	rm -rf $info_file
-	success "卸载完成"
+	success "Uninstallation is complete"
 	exit 0
 }
 
-switch_to_en() {
-	wget -O xray-yes-en.sh https://github.com/jiuqi9997/xray-yes/raw/main/xray-yes-en.sh
-	echo "English version: xray-yes-en.sh"
+switch_to_cn() {
+	wget -O xray-yes.sh https://github.com/jiuqi9997/xray-yes/raw/main/xray-yes.sh
+	echo "Chinese version: xray-yes.sh"
 	sleep 5
-	bash xray-yes-en.sh
+	bash xray-yes.sh
 	exit 0
 }
 
 menu() {
 	clear
 	echo ""
-	echo -e "  XRAY-YES 安装管理 $Red[$script_version]$Font"
+	echo -e "  XRAY-YES Installation and Manager $Red[$script_version]$Font"
 	echo -e "  https://github.com/jiuqi9997/xray-yes"
 	echo ""
 	echo -e " ---------------------------------------"
-	echo -e "  ${Green}0.${Font} 升级 脚本"
-	echo -e "  ${Green}1.${Font} 安装 xray (vless+tcp+xtls+nginx)"
-	echo -e "  ${Green}2.${Font} 升级 xray core"
-	echo -e "  ${Green}3.${Font} 卸载 xray+nginx"
+	echo -e "  ${Green}0.${Font} Update the script"
+	echo -e "  ${Green}1.${Font} Install xray (vless+tcp+xtls+nginx)"
+	echo -e "  ${Green}2.${Font} Update xray core"
+	echo -e "  ${Green}3.${Font} Uninstall xray+nginx"
 	echo -e " ---------------------------------------"
-	echo -e "  ${Green}4.${Font} 修改 UUID"
-	echo -e "  ${Green}5.${Font} 修改 端口"
+	echo -e "  ${Green}4.${Font} Modify the UUID"
+	echo -e "  ${Green}5.${Font} Modify the port"
 	echo -e " ---------------------------------------"
-	echo -e "  ${Green}6.${Font} 查看 实时访问日志"
-	echo -e "  ${Green}7.${Font} 查看 实时错误日志"
-	echo -e "  ${Green}8.${Font} 查看 xray 配置信息"
-	echo -e "  ${Green}9.${Font} Switch to English"
+	echo -e "  ${Green}6.${Font} View live access logs"
+	echo -e "  ${Green}7.${Font} View live error logs"
+	echo -e "  ${Green}8.${Font} View the xray info file"
+	echo -e "  ${Green}9.${Font} 切换到中文"
 	echo ""
-	read -rp "请输入数字：" choice
+	read -rp "Please enter a number: " choice
 	case $choice in
 	0)
 		update_script
@@ -678,7 +678,7 @@ menu() {
 		show_configuration
 		;;
 	9)
-		switch_to_en
+		switch_to_cn
 		;;
 	*)
 		menu
