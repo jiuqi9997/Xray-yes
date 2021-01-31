@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.0.5"
+script_version="1.0.6"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 website_dir="/home/wwwroot"
@@ -250,7 +250,7 @@ install_jemalloc(){
 }
 
 install_nginx() {
-	install_jemalloc
+	[[ ! -f '/usr/local/lib/libjemalloc.so' ]] && install_jemalloc
 	info "编译安装 nginx $nginx_version"
 	wget -O openssl-${openssl_version}.tar.gz https://www.openssl.org/source/openssl-$openssl_version.tar.gz
 	wget -O nginx-${nginx_version}.tar.gz http://nginx.org/download/nginx-${nginx_version}.tar.gz
@@ -259,6 +259,8 @@ install_nginx() {
 	[[ -d openssl-"$openssl_version" ]] && rm -rf openssl-"$openssl_version"
 	tar -xzvf openssl-"$openssl_version".tar.gz
 	cd nginx-"$nginx_version"
+	echo '/usr/local/lib' >/etc/ld.so.conf.d/local.conf
+	ldconfig
 	./configure --prefix="${nginx_dir}" \
 		--with-http_ssl_module \
 		--with-http_gzip_static_module \
@@ -376,6 +378,8 @@ finish() {
 	echo -e "$Red 端口（port）：$Font $port " | tee -a $info_file
 	echo -e "$Red 用户id（UUID/密码）：$Font $uuid" | tee -a $info_file
 	echo -e "$Red 流控（flow）：$Font $xray_flow" | tee -a $info_file
+	echo -e "$Red 伪装域名（host）：$Font $xray_domain" | tee -a $info_file
+	echo -e "$Red 底层传输安全（tls）：$Font ${RedBG}XTLS${Font}" | tee -a $info_file
 	echo ""
 	echo -e " ${GreenBG}提示：${Font} 您可以在支持的设备上使用流控 ${RedBG}xtls-rprx-splice${Font} 以获得更强的性能"
 }
@@ -539,8 +543,8 @@ install_all() {
 	install_acme
 	install_jemalloc
 	install_nginx
-	issue_certificate
 	install_xray
+	issue_certificate
 	finish
 	exit 0
 }
@@ -569,7 +573,7 @@ mod_uuid() {
 	fail=0
 	uuid_old=$(jq '.inbounds[].settings.clients[].id' $xray_conf || fail=1)
 	[[ $(echo $uuid_old | jq '' | wc -l) > 1 ]] && error "有多个 UUID，请自行修改"
-  uuid_old=$(echo $uuid_old | sed 's/\"//g')
+	uuid_old=$(echo $uuid_old | sed 's/\"//g')
 	read -rp "请输入 xray 密码（默认使用 UUID）：" uuid
 	[[ -z $uuid ]] && uuid=$(xray uuid)
 	sed -i "s/$uuid_old/$uuid/g" $xray_conf $info_file
@@ -651,6 +655,8 @@ menu() {
 	echo -e "  ${Green}8.${Font} 查看 xray 配置信息"
 	echo -e "  ${Green}9.${Font} Switch to English"
 	echo ""
+	echo -e "  ${Green}10.${Font} 退出"
+	echo ""
 	read -rp "请输入数字：" choice
 	case $choice in
 	0)
@@ -683,6 +689,9 @@ menu() {
 	9)
 		switch_to_en
 		;;
+	10)
+	    exit 0
+	    ;;
 	*)
 		menu
 		;;

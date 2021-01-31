@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.0.5"
+script_version="1.0.6"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 website_dir="/home/wwwroot"
@@ -238,9 +238,9 @@ install_jemalloc(){
 	tar -xvf jemalloc-$jemalloc_version.tar.bz2
 	cd jemalloc-$jemalloc_version
 	info "Complie jamalloc $jemalloc_version"
-	echo '/usr/local/lib' >/etc/ld.so.conf.d/local.conf
 	./configure
 	make -j$(nproc --all) && make install
+	echo '/usr/local/lib' >/etc/ld.so.conf.d/local.conf
 	ldconfig
 	cd ..
 	rm -rf jemalloc*
@@ -250,7 +250,7 @@ install_jemalloc(){
 }
 
 install_nginx() {
-	install_jemalloc
+	[[ ! -f '/usr/local/lib/libjemalloc.so' ]] && install_jemalloc
 	info "Complie nginx $nginx_version"
 	wget -O openssl-${openssl_version}.tar.gz https://www.openssl.org/source/openssl-$openssl_version.tar.gz
 	wget -O nginx-${nginx_version}.tar.gz http://nginx.org/download/nginx-${nginx_version}.tar.gz
@@ -259,6 +259,8 @@ install_nginx() {
 	[[ -d openssl-"$openssl_version" ]] && rm -rf openssl-"$openssl_version"
 	tar -xzvf openssl-"$openssl_version".tar.gz
 	cd nginx-"$nginx_version"
+	echo '/usr/local/lib' >/etc/ld.so.conf.d/local.conf
+	ldconfig
 	./configure --prefix="${nginx_dir}" \
 		--with-http_ssl_module \
 		--with-http_gzip_static_module \
@@ -376,6 +378,8 @@ finish() {
 	echo -e "$Red Port：$Font $port " | tee -a $info_file
 	echo -e "$Red UUID/Passwd: $Font $uuid" | tee -a $info_file
 	echo -e "$Red Flow：$Font $xray_flow" | tee -a $info_file
+	echo -e "$Red Host：$Font $xray_domain" | tee -a $info_file
+	echo -e "$Red TLS：$Font ${RedBG}XTLS${Font}" | tee -a $info_file
 	echo ""
 	echo -e " ${GreenBG}Tip:${Font} You can use flow control ${RedBG}xtls-rprx-splice${Font} on supported platforms to get better performance."
 }
@@ -539,8 +543,8 @@ install_all() {
 	install_acme
 	install_jemalloc
 	install_nginx
-	issue_certificate
 	install_xray
+	issue_certificate
 	finish
 	exit 0
 }
@@ -569,7 +573,7 @@ mod_uuid() {
 	fail=0
 	uuid_old=$(jq '.inbounds[].settings.clients[].id' $xray_conf || fail=1)
 	[[ $(echo $uuid_old | jq '' | wc -l) > 1 ]] && error "There are multiple UUIDs, please modify by yourself"
-  uuid_old=$(echo $uuid_old | sed 's/\"//g')
+    uuid_old=$(echo $uuid_old | sed 's/\"//g')
 	read -rp "Please enter the password for xray (default UUID): " uuid
 	[[ -z $uuid ]] && uuid=$(xray uuid)
 	sed -i "s/$uuid_old/$uuid/g" $xray_conf $info_file
@@ -651,6 +655,8 @@ menu() {
 	echo -e "  ${Green}8.${Font} View the xray info file"
 	echo -e "  ${Green}9.${Font} 切换到中文"
 	echo ""
+    echo -e "  ${Green}10.${Font} Exit"
+	echo ""
 	read -rp "Please enter a number: " choice
 	case $choice in
 	0)
@@ -683,6 +689,9 @@ menu() {
 	9)
 		switch_to_cn
 		;;
+	10)
+	    exit 0
+	    ;;
 	*)
 		menu
 		;;
