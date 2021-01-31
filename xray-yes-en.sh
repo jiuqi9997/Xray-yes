@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.0.61"
+script_version="1.0.62"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 website_dir="/home/wwwroot"
@@ -429,7 +429,7 @@ prepare_installation() {
 	read -rp "Enter a number (default IPv4 only): " ip_type
 	[[ -z $ip_type ]] && ip_type=1
 	if [[ $ip_type -eq 1 ]]; then
-		domain_ip=$(ping "$xray_domain" -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
+		domain_ip=$(ping4 "$xray_domain" -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
 		server_ip=$(curl -sL https://api.ip.sb/ip -4 || fail=1)
 		[[ $fail -eq 1 ]] && error "Failed to get local IP address"
 		[[ $server_ip == $domain_ip ]] && success "The domain name has been resolved to the local IP address" && success=1
@@ -477,7 +477,7 @@ prepare_installation() {
 			esac
 		fi
 	elif [[ $ip_type -eq 3 ]]; then
-		domain_ip=$(ping "$xray_domain" -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
+		domain_ip=$(ping4 "$xray_domain" -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
 		server_ip=$(curl -sL https://api.ip.sb/ip -4 || fail=1)
 		[[ $fail -eq 1 ]] && error "Failed to get the local IP address (IPv4)"
 		[[ $server_ip == $domain_ip ]] && success "The domain name has been resolved to the local IP address (IPv4)" && success=1
