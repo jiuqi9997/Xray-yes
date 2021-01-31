@@ -1,6 +1,6 @@
 #!/bin/bash
 # Github: https://github.com/jiuqi9997/xray-yes
-# Script link: https://github.com/jiuqi9997/xray-yes/raw/main/xray-yes.sh
+# Script link: https://github.com/jiuqi9997/xray-yes/raw/main/xray-yes-en.sh
 #
 # Thanks for using.
 #
@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.0.66"
+script_version="1.0.68"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 website_dir="/home/wwwroot"
@@ -557,7 +557,7 @@ update_script() {
 		[[ $fail -eq 1 ]] && error "Failed to update"
 		success "Successfully updated"
 		sleep 2
-		bash xray-yes-en.sh
+		bash xray-yes-en.sh $@
 		exit 0
 	fi
 	success "Currently the latest version"
@@ -701,6 +701,7 @@ menu() {
 main() {
 	check_root
 	color
+	update_script $@
 	case $1 in
 	install)
 		install_all
@@ -723,5 +724,4 @@ main() {
 	esac
 }
 
-update_script
-main $1
+main $@

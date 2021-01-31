@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.0.66"
+script_version="1.0.68"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 website_dir="/home/wwwroot"
@@ -557,7 +557,7 @@ update_script() {
 		[[ $fail -eq 1 ]] && error "更新失败"
 		success "更新成功"
 		sleep 2
-		bash xray-yes.sh
+		bash xray-yes.sh $@
 		exit 0
 	fi
 	success "当前是最新版本"
@@ -701,6 +701,7 @@ menu() {
 main() {
 	check_root
 	color
+	update_script $@
 	case $1 in
 	install)
 		install_all
@@ -723,5 +724,4 @@ main() {
 	esac
 }
 
-update_script
-main $1
+main $@
