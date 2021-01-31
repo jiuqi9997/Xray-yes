@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.0.2"
+script_version="1.0.3"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 website_dir="/home/wwwroot"
@@ -63,8 +63,8 @@ install_packages() {
 	$PM update -y
 	$PM upgrade -y
 	$PM install -y wget curl
-	rpm_packages="libcurl-devel tar gcc make zip unzip openssl openssl-devel libxml2 libxml2-devel libxslt* zlib zlib-devel libjpeg-devel libpng-devel libwebp libwebp-devel freetype freetype-devel lsof pcre pcre-devel crontabs icu libicu-devel c-ares libffi-devel bzip2-devel ncurses-devel sqlite-devel readline-devel tk-devel gdbm-devel xz-devel libtermcap-devel libevent-devel libuuid-devel git jq"
-	apt_packages="libcurl4-openssl-dev gcc make zip unzip openssl libssl-dev libxml2 libxml2-dev zlib1g zlib1g-dev libjpeg-dev libpng-dev lsof libpcre3 libpcre3-dev cron net-tools swig build-essential libffi-dev libbz2-dev libncurses-dev libsqlite3-dev libreadline-dev tk-dev libgdbm-dev libdb-dev libdb++-dev libpcap-dev xz-utils git libgd3 libgd-dev libevent-dev libncurses5-dev uuid-dev jq"
+	rpm_packages="libcurl-devel tar gcc make zip unzip openssl openssl-devel libxml2 libxml2-devel libxslt* zlib zlib-devel libjpeg-devel libpng-devel libwebp libwebp-devel freetype freetype-devel lsof pcre pcre-devel crontabs icu libicu-devel c-ares libffi-devel bzip2 bzip2-devel ncurses-devel sqlite-devel readline-devel tk-devel gdbm-devel xz-devel libtermcap-devel libevent-devel libuuid-devel git jq"
+	apt_packages="libcurl4-openssl-dev gcc make zip unzip openssl libssl-dev libxml2 libxml2-dev zlib1g zlib1g-dev libjpeg-dev libpng-dev lsof libpcre3 libpcre3-dev cron net-tools swig build-essential libffi-dev libbz2-dev libncurses-dev libsqlite3-dev libreadline-dev tk-dev libgdbm-dev libdb-dev libdb++-dev libpcap-dev xz-utils git libgd3 libgd-dev libevent-dev libncurses5-dev uuid-dev jq bzip2"
 	if [[ $PM == "apt-get" ]]; then
 		$INS $apt_packages
 	elif [[ $PM == "yum" || $PM == "dnf" ]]; then
@@ -95,10 +95,10 @@ configure_firewall() {
 	elif [[ $(type -P firewalld) ]]; then
 		systemctl start --now firewalld
 		if [[ -n $@ ]]; then
-			firewall-offline-cmd --add-port=22/tcp --add-port=80/tcp --add-port=443/tcp || fail=1
+			firewall-offline-cmd --add-port="$@"/tcp || fail=1
 			success "开放 $@ 端口成功"
 		else
-			firewall-offline-cmd --add-port="$@"/tcp || fail=1
+			firewall-offline-cmd --add-port=22/tcp --add-port=80/tcp --add-port=443/tcp || fail=1
 		fi
 		firewall-cmd --reload || fail=1
 	else
@@ -555,6 +555,7 @@ update_script() {
 		bash xray-yes.sh
 		exit 0
 	fi
+	success "当前是最新版本"
 }
 
 update_xray() {
