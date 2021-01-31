@@ -573,7 +573,7 @@ mod_uuid() {
 	fail=0
 	uuid_old=$(jq '.inbounds[].settings.clients[].id' $xray_conf || fail=1)
 	[[ $(echo $uuid_old | jq '' | wc -l) > 1 ]] && error "There are multiple UUIDs, please modify by yourself"
-    uuid_old=$(echo $uuid_old | sed 's/\"//g')
+	uuid_old=$(echo $uuid_old | sed 's/\"//g')
 	read -rp "Please enter the password for xray (default UUID): " uuid
 	[[ -z $uuid ]] && uuid=$(xray uuid)
 	sed -i "s/$uuid_old/$uuid/g" $xray_conf $info_file
@@ -655,7 +655,7 @@ menu() {
 	echo -e "  ${Green}8.${Font} View the xray info file"
 	echo -e "  ${Green}9.${Font} 切换到中文"
 	echo ""
-    echo -e "  ${Green}10.${Font} Exit"
+	echo -e "  ${Green}10.${Font} Exit"
 	echo ""
 	read -rp "Please enter a number: " choice
 	case $choice in
@@ -690,8 +690,8 @@ menu() {
 		switch_to_cn
 		;;
 	10)
-	    exit 0
-	    ;;
+		exit 0
+		;;
 	*)
 		menu
 		;;

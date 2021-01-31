@@ -241,7 +241,7 @@ install_jemalloc(){
 	./configure
 	make -j$(nproc --all) && make install
 	echo '/usr/local/lib' >/etc/ld.so.conf.d/local.conf
-    ldconfig
+	ldconfig
 	cd ..
 	rm -rf jemalloc*
 	[[ ! -f '/usr/local/lib/libjemalloc.so' ]] &&
@@ -690,8 +690,8 @@ menu() {
 		switch_to_en
 		;;
 	10)
-	    exit 0
-	    ;;
+		exit 0
+		;;
 	*)
 		menu
 		;;
