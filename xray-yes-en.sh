@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.0.74"
+script_version="1.0.75"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 website_dir="/home/wwwroot"
@@ -323,8 +323,7 @@ configure_xray() {
                 "decryption": "none",
                 "fallbacks": [
                     {
-                        "dest" : 80,
-                        "xver": 1
+                        "dest" : 80
                     }
                 ]
             },
