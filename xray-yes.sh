@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.0.73"
+script_version="1.0.74"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 website_dir="/home/wwwroot"
@@ -580,6 +580,7 @@ mod_uuid() {
 	[[ $(grep "$uuid" $xray_conf ) ]] && success "UUID 修改成功"
 	sleep 2
 	xray_restart
+	menu
 }
 
 mod_port() {
@@ -593,6 +594,7 @@ mod_port() {
 	[[ $(grep "$port" $xray_conf ) ]] && success "端口修改成功"
 	sleep 2
 	xray_restart
+	menu
 }
 
 xray_restart() {
