@@ -523,7 +523,7 @@ prepare_installation() {
 		error "请输入正确的数字"
 	fi
 	read -rp "请输入 xray 密码（默认使用 UUID）：" uuid
-	read -rp "请输入 xray 端口（默认为 443 端口）：" port
+	read -rp "请输入 xray 端口（默认为 443）：" port
 	[[ -z $port ]] && port=443
 	[[ $port > 65535 ]] && echo "请输入正确的端口" && install_all
 	configure_firewall $port
@@ -582,7 +582,7 @@ mod_port() {
 	fail=0
 	port_old=$(jq '.inbounds[].port' $xray_conf || fail=1)
 	[[ $(echo $port_old | jq '' | wc -l) > 1 ]] && error "有多个端口，请自行修改"
-	read -rp "请输入 xray 端口（默认为 443 端口）：" port
+	read -rp "请输入 xray 端口（默认为 443）：" port
 	[[ -z $port ]] && port=443
 	[[ $port > 65535 ]] && echo "请输入正确的端口" && mod_port
 	sed -i "s/$port_old/$port/g" $xray_conf $info_file
