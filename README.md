@@ -1,12 +1,12 @@
 # XRAY YES!
 ###
-又一个安装xray的shell脚本
+又一个安装 xray 的 Shell 脚本
 
 VLESS TCP XTLS + NGINX
 
 需要 root 权限
 
-xray 回落到 nginx，nginx作为后端，存放一个静态网站
+xray 回落到 nginx，nginx 作为后端，存放一个静态网站
 
 ## 使用
 ### 交互式
@@ -38,7 +38,7 @@ xray 回落到 nginx，nginx作为后端，存放一个静态网站
 `wget -O xray-yes.sh git.io/xray-yes && bash xray-yes.sh remove`
 
 ## 功能
-全自动编译Nginx，配置静态页面，申请证书，安装xray
+全自动编译 Nginx、配置静态页面、申请证书、安装 xray
 
 <br />
 
@@ -48,7 +48,7 @@ xray 回落到 nginx，nginx作为后端，存放一个静态网站
 
 # XRAY YES!
 ###
-Another shell script to install xray
+Another Shell script to install xray
 
 VLESS TCP XTLS + NGINX
 
