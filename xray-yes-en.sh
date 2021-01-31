@@ -417,19 +417,19 @@ prepare_installation() {
 	echo ""
 	echo "Method:"
 	echo ""
-	echo "1. ipv4 only"
-	echo "2. ipv6 only"
-	echo "3. ipv4 & ipv6"
+	echo "1. IPv4 only"
+	echo "2. IPv6 only"
+	echo "3. IPv4 & IPv6"
 	echo ""
-	read -rp "Enter a number (default ipv4 only): " ip_type
+	read -rp "Enter a number (default IPv4 only): " ip_type
 	[[ -z $ip_type ]] && ip_type=1
 	if [[ $ip_type -eq 1 ]]; then
 		domain_ip=$(ping "$xray_domain" -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
 		server_ip=$(curl -sL https://api.ip.sb/ip -4 || fail=1)
-		[[ $fail -eq 1 ]] && error "Failed to get local ip"
-		[[ $server_ip == $domain_ip ]] && success "The domain name has been resolved to the local ip" && success=1
+		[[ $fail -eq 1 ]] && error "Failed to get local IP Address"
+		[[ $server_ip == $domain_ip ]] && success "The domain name has been resolved to the local IP Address" && success=1
 		if [[ $success -ne 1 ]]; then
-			warning "The domain name is not resolved to the local ip, the certificate application may fail"
+			warning "The domain name is not resolved to the local IP Address, the certificate application may fail"
 			read -rp "Continue? (yes/no): " choice
 			case $choice in
 			yes)
@@ -450,10 +450,10 @@ prepare_installation() {
 	elif [[ $ip_type -eq 2 ]]; then
 		domain_ip=$(ping6 "$xray_domain" -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
 		server_ip=$(curl -sL https://api.ip.sb/ip -6 || fail=1)
-		[[ $fail -eq 1 ]] && error "Failed to get the local ip"
-		[[ $server_ip == $domain_ip ]] && success "The domain name has been resolved to the local ip" && success=1
+		[[ $fail -eq 1 ]] && error "Failed to get the local IP Address"
+		[[ $server_ip == $domain_ip ]] && success "The domain name has been resolved to the local IP Address" && success=1
 		if [[ $success -ne 1 ]]; then
-			warning "The domain name is not resolved to the local ip, the certificate application may fail"
+			warning "The domain name is not resolved to the local IP Address, the certificate application may fail"
 			read -rp "Continue? (yes/no):" choice
 			case $choice in
 			yes)
@@ -474,10 +474,10 @@ prepare_installation() {
 	elif [[ $ip_type -eq 3 ]]; then
 		domain_ip=$(ping "$xray_domain" -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
 		server_ip=$(curl -sL https://api.ip.sb/ip -4 || fail=1)
-		[[ $fail -eq 1 ]] && error "Failed to get the local ip (ipv4)"
-		[[ $server_ip == $domain_ip ]] && success "The domain name has been resolved to the local ip (ipv4)" && success=1
+		[[ $fail -eq 1 ]] && error "Failed to get the local IP Address (IPv4)"
+		[[ $server_ip == $domain_ip ]] && success "The domain name has been resolved to the local IP Address (IPv4)" && success=1
 		if [[ $success -ne 1 ]]; then
-			warning "The domain name is not resolved to the local ip (ipv4), the certificate application may fail"
+			warning "The domain name is not resolved to the local IP Address (IPv4), the certificate application may fail"
 			read -rp "Continue? (yes/no):" choice
 			case $choice in
 			yes)
@@ -497,10 +497,10 @@ prepare_installation() {
 		fi
 		domain_ip6=$(ping6 "$xray_domain" -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
 		server_ip6=$(curl https://api.ip.sb/ip -6 || fail=1)
-		[[ $fail -eq 1 ]] && error "Failed to get the local ip (ipv6)"
-		[[ $server_ip == $domain_ip ]] && success "The domain name has been resolved to the local ip (ipv6)" && success=1
+		[[ $fail -eq 1 ]] && error "Failed to get the local IP Address (IPv6)"
+		[[ $server_ip == $domain_ip ]] && success "The domain name has been resolved to the local IP Address (IPv6)" && success=1
 		if [[ $success -ne 1 ]]; then
-			warning "The domain name is not resolved to the local ip (ipv6), the certificate application may fail"
+			warning "The domain name is not resolved to the local IP Address (IPv6), the certificate application may fail"
 			read -rp "Continue? (yes/no):" choice
 			case $choice in
 			yes)
@@ -521,8 +521,8 @@ prepare_installation() {
 	else
 		error "Please enter a correct number"
 	fi
-	read -rp "Please enter the passwd for xray (default uuid): " uuid
-	read -rp "Please enter the port for xray (default 443): " port
+	read -rp "Please enter the passwd for xray (default UUID): " uuid
+	read -rp "Please enter the port for xray (default 443 port): " port
 	[[ -z $port ]] && port=443
 	[[ $port > 65535 ]] && echo "Please enter a correct port" && install_all
 	configure_firewall $port
@@ -567,11 +567,11 @@ update_xray() {
 mod_uuid() {
 	fail=0
 	uuid_old=$(jq '.inbounds[].settings.clients[].id' $xray_conf || fail=1)
-	[[ $(echo $uuid_old | jq '' | wc -l) > 1 ]] && error "There are multiple uuids, please modify by yourself"
-	read -rp "Please enter the password for xray (default uuid): " uuid
+	[[ $(echo $uuid_old | jq '' | wc -l) > 1 ]] && error "There are multiple UUIDs, please modify by yourself"
+	read -rp "Please enter the password for xray (default UUID): " uuid
 	[[ -z $uuid ]] && uuid=$(xray uuid)
 	sed -i "s/$uuid_old/$uuid/g" $xray_conf $info_file
-	[[ $(grep "$uuid" $xray_conf ) ]] && success "Successfully modified the uuid"
+	[[ $(grep "$uuid" $xray_conf ) ]] && success "Successfully modified the UUID"
 	sleep 2
 	xray_restart
 }
@@ -580,7 +580,7 @@ mod_port() {
 	fail=0
 	port_old=$(jq '.inbounds[].port' $xray_conf || fail=1)
 	[[ $(echo $port_old | jq '' | wc -l) > 1 ]] && error "There are multiple ports, please modify by yourself"
-	read -rp "Please enter the port for xray (default 443): " port
+	read -rp "Please enter the port for xray (default 443 port): " port
 	[[ -z $port ]] && port=443
 	[[ $port > 65535 ]] && echo "Please enter a correct port" && mod_port
 	sed -i "s/$port_old/$port/g" $xray_conf $info_file
