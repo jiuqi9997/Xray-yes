@@ -14,7 +14,7 @@ xray 回落到 nginx，nginx作为后端，存放一个静态网站
 
 或
 
-`wget -O xray-yes.sh git.io/xray-yes)`
+`wget -O xray-yes.sh git.io/xray-yes && bash xray-yes.sh`
 
 ### 安装
 `bash <(curl -L git.io/xray-yes) install`
@@ -62,7 +62,7 @@ Xray falls back to nginx, which is used as the backend to store a static website
 
 or
 
-`wget -O xray-yes-en.sh git.io/xray-yes-en)`
+`wget -O xray-yes-en.sh git.io/xray-yes-en && bash xray-yes-en.sh`
 
 ### Install
 `bash <(curl -L git.io/xray-yes-en) install`
