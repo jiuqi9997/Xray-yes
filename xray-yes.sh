@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.0.3"
+script_version="1.0.5"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 website_dir="/home/wwwroot"
@@ -19,7 +19,7 @@ xray_dir="/usr/local/etc/xray"
 xray_log_dir="/var/log/xray"
 xray_access_log="$xray_log_dir/access.log"
 xray_error_log="$xray_log_dir/error.log"
-xray_conf="/usr/local/etc/xray/config.conf"
+xray_conf="/usr/local/etc/xray/config.json"
 cert_dir="/usr/local/etc/xray"
 info_file="$HOME/xray.inf"
 
@@ -240,7 +240,8 @@ install_jemalloc(){
 	info "编译安装 jamalloc $jemalloc_version"
 	./configure
 	make -j$(nproc --all) && make install
-	ldconfig
+	echo '/usr/local/lib' >/etc/ld.so.conf.d/local.conf
+    ldconfig
 	cd ..
 	rm -rf jemalloc*
 	[[ ! -f '/usr/local/lib/libjemalloc.so' ]] &&
@@ -301,56 +302,56 @@ configure_xray() {
 	xray_flow="xtls-rprx-direct"
 	cat > $xray_conf << EOF
 {
-	"log": {
-		"access": "$xray_log_dir/access.log",
-		"error": "$xray_log_dir/error.log",
-		"loglevel": "warning"
-	},
-	"inbounds": [
-		{
-			"port": $port,
-			"protocol": "vless",
-			"settings": {
-				"clients": [
-					{
-						"id": "$uuid",
-						"flow": "$xray_flow"
-					}
-				],
-				"decryption": "none",
-				"fallbacks": [
-					{
-						"dest" : 80,
-						"xver": 1
-					}
-				]
-			},
-			"streamSettings": {
-				"network": "tcp",
-				"security": "xtls",
-				"xtlsSettings": {
-					"alpn": [
-						"http/1.1"
-					],
-					"certificates": [
-						{
-							"certificateFile": "$cert_dir/cert.pem",
-							"keyFile": "$cert_dir/key.pem"
-						}
-					]
-				}
-			},
-			"sniffing": {
-				"enabled": true,
-				"destOverride": ["http","tls"]
-			}
-		}
-	],
-	"outbounds": [
-		{
-			"protocol": "freedom"
-		}
-	]
+    "log": {
+        "access": "$xray_access_log",
+        "error": "$xray_error_log",
+        "loglevel": "warning"
+    },
+    "inbounds": [
+        {
+            "port": $port,
+            "protocol": "vless",
+            "settings": {
+                "clients": [
+                    {
+                        "id": "$uuid",
+                        "flow": "$xray_flow"
+                    }
+                ],
+                "decryption": "none",
+                "fallbacks": [
+                    {
+                        "dest" : 80,
+                        "xver": 1
+                    }
+                ]
+            },
+            "streamSettings": {
+                "network": "tcp",
+                "security": "xtls",
+                "xtlsSettings": {
+                    "alpn": [
+                        "http/1.1"
+                    ],
+                    "certificates": [
+                        {
+                            "certificateFile": "$cert_dir/cert.pem",
+                            "keyFile": "$cert_dir/key.pem"
+                        }
+                    ]
+                }
+            },
+            "sniffing": {
+                "enabled": true,
+                "destOverride": ["http","tls"]
+            }
+        }
+    ],
+    "outbounds": [
+        {
+            "protocol": "freedom"
+        }
+    ]
 }
 EOF
 }
@@ -538,8 +539,8 @@ install_all() {
 	install_acme
 	install_jemalloc
 	install_nginx
-	install_xray
 	issue_certificate
+	install_xray
 	finish
 	exit 0
 }
@@ -568,6 +569,7 @@ mod_uuid() {
 	fail=0
 	uuid_old=$(jq '.inbounds[].settings.clients[].id' $xray_conf || fail=1)
 	[[ $(echo $uuid_old | jq '' | wc -l) > 1 ]] && error "有多个 UUID，请自行修改"
+  uuid_old=$(echo $uuid_old | sed 's/\"//g')
 	read -rp "请输入 xray 密码（默认使用 UUID）：" uuid
 	[[ -z $uuid ]] && uuid=$(xray uuid)
 	sed -i "s/$uuid_old/$uuid/g" $xray_conf $info_file
