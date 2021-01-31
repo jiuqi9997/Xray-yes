@@ -523,7 +523,7 @@ prepare_installation() {
 		error "Please enter a correct number"
 	fi
 	read -rp "Please enter the passwd for xray (default UUID): " uuid
-	read -rp "Please enter the port for xray (default 443 port): " port
+	read -rp "Please enter the port for xray (default 443): " port
 	[[ -z $port ]] && port=443
 	[[ $port > 65535 ]] && echo "Please enter a correct port" && install_all
 	configure_firewall $port
@@ -582,7 +582,7 @@ mod_port() {
 	fail=0
 	port_old=$(jq '.inbounds[].port' $xray_conf || fail=1)
 	[[ $(echo $port_old | jq '' | wc -l) > 1 ]] && error "There are multiple ports, please modify by yourself"
-	read -rp "Please enter the port for xray (default 443 port): " port
+	read -rp "Please enter the port for xray (default 443): " port
 	[[ -z $port ]] && port=443
 	[[ $port > 65535 ]] && echo "Please enter a correct port" && mod_port
 	sed -i "s/$port_old/$port/g" $xray_conf $info_file
