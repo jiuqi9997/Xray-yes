@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.0.6"
+script_version="1.0.61"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 website_dir="/home/wwwroot"
@@ -541,7 +541,6 @@ install_all() {
 	check_env
 	install_packages
 	install_acme
-	install_jemalloc
 	install_nginx
 	install_xray
 	issue_certificate
