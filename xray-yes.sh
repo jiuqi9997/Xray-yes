@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.0.72"
+script_version="1.0.73"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 website_dir="/home/wwwroot"
@@ -381,7 +381,7 @@ finish() {
 	echo -e "$Red 伪装域名（host）：$Font $xray_domain" | tee -a $info_file
 	echo -e "$Red 底层传输安全（tls）：$Font ${RedBG}XTLS${Font}" | tee -a $info_file
 	echo ""
-	echo -e " ${GreenBG}提示：${Font} 您可以在支持的设备上使用流控 ${RedBG}xtls-rprx-splice${Font} 以获得更强的性能"
+	echo -e "${GreenBG} 提示：${Font}您可以在 linux 平台上使用流控 ${RedBG}xtls-rprx-splice${Font} 以获得更好的性能"
 }
 
 info() {
@@ -564,7 +564,8 @@ update_script() {
 }
 
 update_xray() {
-	curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s -- installl	[[ ! $(ps aux | grep xray) ]] && error "xray 更新失败"
+	curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s -- installl
+	[[ ! $(ps aux | grep xray) ]] && error "xray 更新失败"
 	success "xray 更新成功"
 }
 
@@ -697,6 +698,7 @@ menu() {
 }
 
 main() {
+    clear
 	check_root
 	color
 	update_script $@
@@ -723,4 +725,3 @@ main() {
 }
 
 main $@
-

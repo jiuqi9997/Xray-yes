@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.0.72"
+script_version="1.0.73"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 website_dir="/home/wwwroot"
@@ -381,7 +381,7 @@ finish() {
 	echo -e "$Red Host：$Font $xray_domain" | tee -a $info_file
 	echo -e "$Red TLS：$Font ${RedBG}XTLS${Font}" | tee -a $info_file
 	echo ""
-	echo -e " ${GreenBG}Tip:${Font} You can use flow control ${RedBG}xtls-rprx-splice${Font} on supported platforms to get better performance."
+	echo -e "${GreenBG} Tip: ${Font}You can use flow control ${RedBG}xtls-rprx-splice${Font} on the linux platform to get better performance"
 }
 
 info() {
@@ -698,6 +698,7 @@ menu() {
 }
 
 main() {
+    clear
 	check_root
 	color
 	update_script $@
