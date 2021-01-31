@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.0.68"
+script_version="1.0.70"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 website_dir="/home/wwwroot"
@@ -430,7 +430,7 @@ prepare_installation() {
 	[[ -z $ip_type ]] && ip_type=1
 	if [[ $ip_type -eq 1 ]]; then
 		domain_ip=$(ping -4 "$xray_domain" -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
-		server_ip=$(curl -sL https://api.ip.sb/ip -4 || fail=1)
+		server_ip=$(curl -sL https://api64.ipify.org -4 || fail=1)
 		[[ $fail -eq 1 ]] && error "本机 IP 地址获取失败"
 		[[ $server_ip == $domain_ip ]] && success "域名已经解析到本机" && success=1
 		if [[ $success -ne 1 ]]; then
@@ -454,7 +454,7 @@ prepare_installation() {
 		fi
 	elif [[ $ip_type -eq 2 ]]; then
 		domain_ip=$(ping -6 "$xray_domain" -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
-		server_ip=$(curl -sL https://api.ip.sb/ip -6 || fail=1)
+		server_ip=$(curl -sL https://api64.ipify.org -6 || fail=1)
 		[[ $fail -eq 1 ]] && error "本机 IP 地址获取失败"
 		[[ $server_ip == $domain_ip ]] && success "域名已经解析到本机" && success=1
 		if [[ $success -ne 1 ]]; then
@@ -478,7 +478,7 @@ prepare_installation() {
 		fi
 	elif [[ $ip_type -eq 3 ]]; then
 		domain_ip=$(ping -4 "$xray_domain" -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
-		server_ip=$(curl -sL https://api.ip.sb/ip -4 || fail=1)
+		server_ip=$(curl -sL https://api64.ipify.org -4 || fail=1)
 		[[ $fail -eq 1 ]] && error "本机 IPv4 地址获取失败"
 		[[ $server_ip == $domain_ip ]] && success "域名已经解析到本机（IPv4）" && success=1
 		if [[ $success -ne 1 ]]; then
@@ -501,7 +501,7 @@ prepare_installation() {
 			esac
 		fi
 		domain_ip6=$(ping -6 "$xray_domain" -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
-		server_ip6=$(curl https://api.ip.sb/ip -6 || fail=1)
+		server_ip6=$(curl https://api64.ipify.org -6 || fail=1)
 		[[ $fail -eq 1 ]] && error "本机 IPv6 地址获取失败"
 		[[ $server_ip == $domain_ip ]] && success "域名已经解析到本机（IPv6）" && success=1
 		if [[ $success -ne 1 ]]; then
