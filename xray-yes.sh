@@ -49,12 +49,12 @@ get_info() {
 
 check_env() {
 	if [[ $(ss -tnlp | grep 80) ]]; then
-		error "80端口被占用（需用于申请证书）"
+		error "80 端口被占用（需用于申请证书）"
 	fi
 	if [[ $port -eq "443" && $(ss -tnlp | grep 443) ]]; then
-		error "443端口被占用"
+		error "443 端口被占用"
 	elif [[ $(ss -tnlp | grep $port) ]]; then
-		error "$port端口被占用"
+		error "$port 端口被占用"
 	fi
 }
 
@@ -77,7 +77,7 @@ install_packages() {
 
 check_root() {
 	if [[ $EUID -ne 0 ]]; then
-		error "无root权限，退出中"
+		error "无 root 权限，退出中"
 	fi
 }
 
@@ -283,7 +283,7 @@ install_nginx() {
 }
 
 issue_certificate() {
-	info "申请SSL证书"
+	info "申请 SSL 证书"
 	fail=0
 	/root/.acme.sh/acme.sh --issue -d $xray_domain --keylength ec-256 --fullchain-file "$cert_dir/cert.pem" --key-file "$cert_dir/key.pem" --webroot "$website_dir/$xray_domain" --force || fail=1
 	[[ $fail -eq 1 ]] && error "证书申请失败"
@@ -417,16 +417,16 @@ prepare_installation() {
 	echo ""
 	echo "模式"
 	echo ""
-	echo "1. ipv4 only"
-	echo "2. ipv6 only"
-	echo "3. ipv4 & ipv6"
+	echo "1. IPv4 only"
+	echo "2. IPv6 only"
+	echo "3. IPv4 & IPv6"
 	echo ""
-	read -rp "请输入数字（默认为ipv4 only）：" ip_type
+	read -rp "请输入数字（默认为 IPv4 only）：" ip_type
 	[[ -z $ip_type ]] && ip_type=1
 	if [[ $ip_type -eq 1 ]]; then
 		domain_ip=$(ping "$xray_domain" -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
 		server_ip=$(curl -sL https://api.ip.sb/ip -4 || fail=1)
-		[[ $fail -eq 1 ]] && error "本机ip获取失败"
+		[[ $fail -eq 1 ]] && error "本机 IP 地址获取失败"
 		[[ $server_ip == $domain_ip ]] && success "域名已经解析到本机" && success=1
 		if [[ $success -ne 1 ]]; then
 			warning "域名没有解析到本机，证书申请可能失败"
@@ -450,7 +450,7 @@ prepare_installation() {
 	elif [[ $ip_type -eq 2 ]]; then
 		domain_ip=$(ping6 "$xray_domain" -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
 		server_ip=$(curl -sL https://api.ip.sb/ip -6 || fail=1)
-		[[ $fail -eq 1 ]] && error "本机ip获取失败"
+		[[ $fail -eq 1 ]] && error "本机 IP 地址获取失败"
 		[[ $server_ip == $domain_ip ]] && success "域名已经解析到本机" && success=1
 		if [[ $success -ne 1 ]]; then
 			warning "域名没有解析到本机，证书申请可能失败"
@@ -474,10 +474,10 @@ prepare_installation() {
 	elif [[ $ip_type -eq 3 ]]; then
 		domain_ip=$(ping "$xray_domain" -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
 		server_ip=$(curl -sL https://api.ip.sb/ip -4 || fail=1)
-		[[ $fail -eq 1 ]] && error "本机ipv4获取失败"
-		[[ $server_ip == $domain_ip ]] && success "域名已经解析到本机（ipv4）" && success=1
+		[[ $fail -eq 1 ]] && error "本机 IPv4 地址获取失败"
+		[[ $server_ip == $domain_ip ]] && success "域名已经解析到本机（IPv4）" && success=1
 		if [[ $success -ne 1 ]]; then
-			warning "域名没有解析到本机（ipv4），证书申请可能失败"
+			warning "域名没有解析到本机（IPv4），证书申请可能失败"
 			read -rp "继续？（yes/no）" choice
 			case $choice in
 			yes)
@@ -497,10 +497,10 @@ prepare_installation() {
 		fi
 		domain_ip6=$(ping6 "$xray_domain" -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
 		server_ip6=$(curl https://api.ip.sb/ip -6 || fail=1)
-		[[ $fail -eq 1 ]] && error "本机ipv6获取失败"
-		[[ $server_ip == $domain_ip ]] && success "域名已经解析到本机（ipv6）" && success=1
+		[[ $fail -eq 1 ]] && error "本机 IPv6 地址获取失败"
+		[[ $server_ip == $domain_ip ]] && success "域名已经解析到本机（IPv6）" && success=1
 		if [[ $success -ne 1 ]]; then
-			warning "域名没有解析到本机（ipv6），证书申请可能失败"
+			warning "域名没有解析到本机（IPv6），证书申请可能失败"
 			read -rp "继续？（yes/no）" choice
 			case $choice in
 			yes)
@@ -521,8 +521,8 @@ prepare_installation() {
 	else
 		error "请输入正确的数字"
 	fi
-	read -rp "请输入xray密码（默认使用uuid）：" uuid
-	read -rp "请输入xray端口（默认443）：" port
+	read -rp "请输入 xray 密码（默认使用 UUID）：" uuid
+	read -rp "请输入 xray 端口（默认为 443 端口）：" port
 	[[ -z $port ]] && port=443
 	[[ $port > 65535 ]] && echo "请输入正确的端口" && install_all
 	configure_firewall $port
@@ -567,11 +567,11 @@ update_xray() {
 mod_uuid() {
 	fail=0
 	uuid_old=$(jq '.inbounds[].settings.clients[].id' $xray_conf || fail=1)
-	[[ $(echo $uuid_old | jq '' | wc -l) > 1 ]] && error "有多个uuid，请自行修改"
-	read -rp "请输入xray密码（默认使用uuid）：" uuid
+	[[ $(echo $uuid_old | jq '' | wc -l) > 1 ]] && error "有多个 UUID，请自行修改"
+	read -rp "请输入 xray 密码（默认使用 UUID）：" uuid
 	[[ -z $uuid ]] && uuid=$(xray uuid)
 	sed -i "s/$uuid_old/$uuid/g" $xray_conf $info_file
-	[[ $(grep "$uuid" $xray_conf ) ]] && success "uuid 修改成功"
+	[[ $(grep "$uuid" $xray_conf ) ]] && success "UUID 修改成功"
 	sleep 2
 	xray_restart
 }
@@ -580,7 +580,7 @@ mod_port() {
 	fail=0
 	port_old=$(jq '.inbounds[].port' $xray_conf || fail=1)
 	[[ $(echo $port_old | jq '' | wc -l) > 1 ]] && error "有多个端口，请自行修改"
-	read -rp "请输入xray端口（默认443）：" port
+	read -rp "请输入 xray 端口（默认为 443 端口）：" port
 	[[ -z $port ]] && port=443
 	[[ $port > 65535 ]] && echo "请输入正确的端口" && mod_port
 	sed -i "s/$port_old/$port/g" $xray_conf $info_file
