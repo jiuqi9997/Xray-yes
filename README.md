@@ -48,7 +48,7 @@ xray 回落到 nginx，nginx 作为后端，存放一个静态网站
 
 # XRAY YES!
 ###
-Another Shell script to install xray
+Another shell script to install xray
 
 VLESS TCP XTLS + NGINX
 
