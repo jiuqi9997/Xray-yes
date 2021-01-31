@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.0.70"
+script_version="1.0.71"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 website_dir="/home/wwwroot"
@@ -48,12 +48,12 @@ get_info() {
 }
 
 check_env() {
-	if [[ $(ss -tnlp | grep 80) ]]; then
+	if [[ $(ss -tnlp | grep ":80 ") ]]; then
 		error "Port 80 is occupied (it's required for certificate application)"
 	fi
-	if [[ $port -eq "443" && $(ss -tnlp | grep 443) ]]; then
+	if [[ $port -eq "443" && $(ss -tnlp | grep ":443 ") ]]; then
 		error "Port 443 is occupied"
-	elif [[ $(ss -tnlp | grep $port) ]]; then
+	elif [[ $(ss -tnlp | grep ":$port ") ]]; then
 		error "Port $port is occupied"
 	fi
 }

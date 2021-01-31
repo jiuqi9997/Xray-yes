@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.0.70"
+script_version="1.0.71"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 website_dir="/home/wwwroot"
@@ -48,12 +48,12 @@ get_info() {
 }
 
 check_env() {
-	if [[ $(ss -tnlp | grep 80) ]]; then
+	if [[ $(ss -tnlp | grep ":80 ") ]]; then
 		error "80 端口被占用（需用于申请证书）"
 	fi
-	if [[ $port -eq "443" && $(ss -tnlp | grep 443) ]]; then
+	if [[ $port -eq "443" && $(ss -tnlp | grep ":443 ") ]]; then
 		error "443 端口被占用"
-	elif [[ $(ss -tnlp | grep $port) ]]; then
+	elif [[ $(ss -tnlp | grep ":$port ") ]]; then
 		error "$port 端口被占用"
 	fi
 }
