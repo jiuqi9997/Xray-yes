@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.0.3"
+script_version="1.0.4"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 website_dir="/home/wwwroot"
@@ -240,7 +240,8 @@ install_jemalloc(){
 	info "编译安装 jamalloc $jemalloc_version"
 	./configure
 	make -j$(nproc --all) && make install
-	ldconfig
+	echo '/usr/local/lib' >/etc/ld.so.conf.d/local.conf
+    ldconfig
 	cd ..
 	rm -rf jemalloc*
 	[[ ! -f '/usr/local/lib/libjemalloc.so' ]] &&
@@ -268,7 +269,8 @@ install_nginx() {
 		--with-http_mp4_module \
 		--with-http_secure_link_module \
 		--with-http_v2_module \
-		--with-cc-opt='-O3' \
+		--with-cc-opt="-Wno-error" \
+		--with-ld-opt="-Wl,-E" \
 		--with-ld-opt="-ljemalloc" \
 		--with-openssl=../openssl-"$openssl_version"
 	make -j$(nproc --all) && make install
@@ -568,9 +570,10 @@ mod_uuid() {
 	fail=0
 	uuid_old=$(jq '.inbounds[].settings.clients[].id' $xray_conf || fail=1)
 	[[ $(echo $uuid_old | jq '' | wc -l) > 1 ]] && error "有多个uuid，请自行修改"
+	uuid_old=$(echo $uuid_old | sed 's/\"//g')
 	read -rp "请输入xray密码（默认使用uuid）：" uuid
 	[[ -z $uuid ]] && uuid=$(xray uuid)
-	sed -i "s/$uuid_old/$uuid/g" $xray_conf $info_file
+	sed -i "s/$uuid_old/"$uuid"/g" $xray_conf $info_file
 	[[ $(grep "$uuid" $xray_conf ) ]] && success "uuid 修改成功"
 	sleep 2
 	xray_restart

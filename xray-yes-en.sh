@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.0.3"
+script_version="1.0.4"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 website_dir="/home/wwwroot"
@@ -238,6 +238,7 @@ install_jemalloc(){
 	tar -xvf jemalloc-$jemalloc_version.tar.bz2
 	cd jemalloc-$jemalloc_version
 	info "Complie jamalloc $jemalloc_version"
+	echo '/usr/local/lib' >/etc/ld.so.conf.d/local.conf
 	./configure
 	make -j$(nproc --all) && make install
 	ldconfig
@@ -568,6 +569,7 @@ mod_uuid() {
 	fail=0
 	uuid_old=$(jq '.inbounds[].settings.clients[].id' $xray_conf || fail=1)
 	[[ $(echo $uuid_old | jq '' | wc -l) > 1 ]] && error "There are multiple uuids, please modify by yourself"
+	uuid_old=$(echo $uuid_old | sed 's/\"//g')
 	read -rp "Please enter the password for xray (default uuid): " uuid
 	[[ -z $uuid ]] && uuid=$(xray uuid)
 	sed -i "s/$uuid_old/$uuid/g" $xray_conf $info_file
