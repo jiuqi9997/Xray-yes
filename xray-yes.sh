@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.0.75"
+script_version="1.0.76"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 website_dir="/home/wwwroot"
@@ -323,7 +323,8 @@ configure_xray() {
                 "decryption": "none",
                 "fallbacks": [
                     {
-                        "dest" : 80
+                        "dest": 80,
+                        "xver": 1
                     }
                 ]
             },
@@ -563,7 +564,7 @@ update_script() {
 }
 
 update_xray() {
-	curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s -- installl
+	curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s -- install
 	[[ ! $(ps aux | grep xray) ]] && error "xray 更新失败"
 	success "xray 更新成功"
 }
