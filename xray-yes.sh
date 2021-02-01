@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.0.77"
+script_version="1.0.80"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 website_dir="/home/wwwroot"
@@ -323,8 +323,7 @@ configure_xray() {
                 "decryption": "none",
                 "fallbacks": [
                     {
-                        "dest": 80,
-                        "xver": 1
+                        "dest": 80
                     }
                 ]
             },
@@ -654,9 +653,10 @@ menu() {
 	echo -e "  ${Green}6.${Font} 查看 实时访问日志"
 	echo -e "  ${Green}7.${Font} 查看 实时错误日志"
 	echo -e "  ${Green}8.${Font} 查看 xray 配置信息"
-	echo -e "  ${Green}9.${Font} Switch to English"
+	echo -e "  ${Green}9.${Font} 重启 xray"
+	echo -e "  ${Green}10.${Font} Switch to English"
 	echo ""
-	echo -e "  ${Green}10.${Font} 退出"
+	echo -e "  ${Green}11.${Font} 退出"
 	echo ""
 	read -rp "请输入数字：" choice
 	case $choice in
@@ -688,9 +688,12 @@ menu() {
 		show_configuration
 		;;
 	9)
-		switch_to_en
+		xray_restart
 		;;
 	10)
+		switch_to_en
+		;;
+	11)
 		exit 0
 		;;
 	*)
