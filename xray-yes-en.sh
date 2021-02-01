@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.0.81"
+script_version="1.0.82"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 website_dir="/home/wwwroot"
@@ -227,7 +227,7 @@ EOF
 install_acme() {
 	info "Started installing acme.sh"
 	fail=0
-	curl -L get.acme.sh | bash || fail=1
+	curl https://raw.githubusercontent.com/acmesh-official/acme.sh/master/acme.sh | bash -s -- --install-online || fail=1
 	[[ $fail -eq 1 ]] &&
 	error "Failed to install acme.sh"
 	success "Successfully installed acme.sh"
@@ -704,7 +704,7 @@ menu() {
 }
 
 main() {
-    clear
+	clear
 	check_root
 	color
 	update_script $@
