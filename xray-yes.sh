@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.0.80"
+script_version="1.0.81"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 website_dir="/home/wwwroot"
@@ -140,7 +140,7 @@ configure_nginx() {
 	cat > "$nginx_conf_dir/vhost/$xray_domain.conf" <<EOF
 server
 {
-	listen 80;
+	listen 80 proxy_protocol;
 	server_name $xray_domain;
 	index index.html index.htm index.php default.php default.htm default.html;
 	root /home/wwwroot/$xray_domain;
@@ -323,7 +323,8 @@ configure_xray() {
                 "decryption": "none",
                 "fallbacks": [
                     {
-                        "dest": 80
+                        "dest": 80,
+                        "xver": 1
                     }
                 ]
             },
