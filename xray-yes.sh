@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.0.83"
+script_version="1.0.85"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 website_dir="/home/wwwroot"
@@ -63,8 +63,8 @@ install_packages() {
 	$PM update -y
 	$PM upgrade -y
 	$PM install -y wget curl
-	rpm_packages="libcurl-devel tar gcc make zip unzip openssl openssl-devel libxml2 libxml2-devel libxslt* zlib zlib-devel libjpeg-devel libpng-devel libwebp libwebp-devel freetype freetype-devel lsof pcre pcre-devel crontabs icu libicu-devel c-ares libffi-devel bzip2 bzip2-devel ncurses-devel sqlite-devel readline-devel tk-devel gdbm-devel xz-devel libtermcap-devel libevent-devel libuuid-devel git jq"
-	apt_packages="libcurl4-openssl-dev gcc make zip unzip openssl libssl-dev libxml2 libxml2-dev zlib1g zlib1g-dev libjpeg-dev libpng-dev lsof libpcre3 libpcre3-dev cron net-tools swig build-essential libffi-dev libbz2-dev libncurses-dev libsqlite3-dev libreadline-dev tk-dev libgdbm-dev libdb-dev libdb++-dev libpcap-dev xz-utils git libgd3 libgd-dev libevent-dev libncurses5-dev uuid-dev jq bzip2"
+	rpm_packages="libcurl-devel tar gcc make zip unzip openssl openssl-devel libxml2 libxml2-devel libxslt* zlib zlib-devel libjpeg-devel libpng-devel libwebp libwebp-devel freetype freetype-devel lsof pcre pcre-devel crontabs icu libicu-devel c-ares libffi-devel bzip2 bzip2-devel ncurses-devel sqlite-devel readline-devel tk-devel gdbm-devel xz-devel libtermcap-devel libevent-devel libuuid-devel git jq socat"
+	apt_packages="libcurl4-openssl-dev gcc make zip unzip openssl libssl-dev libxml2 libxml2-dev zlib1g zlib1g-dev libjpeg-dev libpng-dev lsof libpcre3 libpcre3-dev cron net-tools swig build-essential libffi-dev libbz2-dev libncurses-dev libsqlite3-dev libreadline-dev tk-dev libgdbm-dev libdb-dev libdb++-dev libpcap-dev xz-utils git libgd3 libgd-dev libevent-dev libncurses5-dev uuid-dev jq bzip2 socat"
 	if [[ $PM == "apt-get" ]]; then
 		$INS $apt_packages
 	elif [[ $PM == "yum" || $PM == "dnf" ]]; then
@@ -140,10 +140,21 @@ configure_nginx() {
 	cat > "$nginx_conf_dir/vhost/$xray_domain.conf" <<EOF
 server
 {
-	listen 80 proxy_protocol;
+	listen 80;
+	server_name $xray_domain;
+	return 301 https://$http_host$request_uri;
+
+	access_log  /dev/null;
+	error_log  /dev/null;
+}
+
+server
+{
+	listen 8080 proxy_protocol;
 	server_name $xray_domain;
 	index index.html index.htm index.php default.php default.htm default.html;
 	root /home/wwwroot/$xray_domain;
+	add_header Strict-Transport-Security "max-age=31536000" always;
 
 	location ~ .*\.(gif|jpg|jpeg|png|bmp|swf)$
 	{
@@ -219,7 +230,7 @@ http
 
 		server_tokens off;
 		access_log off;
-include /etc/nginx/conf/vhost/*.conf;
+		include /etc/nginx/conf/vhost/*.conf;
 }
 EOF
 }
@@ -288,7 +299,7 @@ install_nginx() {
 issue_certificate() {
 	info "申请 SSL 证书"
 	fail=0
-	/root/.acme.sh/acme.sh --issue -d $xray_domain --keylength ec-256 --fullchain-file "$cert_dir/cert.pem" --key-file "$cert_dir/key.pem" --webroot "$website_dir/$xray_domain" --force || fail=1
+	/root/.acme.sh/acme.sh --issue -d $xray_domain --keylength ec-256 --fullchain-file "$cert_dir/cert.pem" --key-file "$cert_dir/key.pem" --standalone --force || fail=1
 	[[ $fail -eq 1 ]] && error "证书申请失败"
 	chmod 600 "$cert_dir/cert.pem" "$cert_dir/key.pem"
 	if [[ $(grep "nogroup" /etc/group) ]]; then
@@ -323,7 +334,7 @@ configure_xray() {
                 "decryption": "none",
                 "fallbacks": [
                     {
-                        "dest": 80,
+                        "dest": 8080,
                         "xver": 1
                     }
                 ]
@@ -332,13 +343,16 @@ configure_xray() {
                 "network": "tcp",
                 "security": "xtls",
                 "xtlsSettings": {
+                    "allowInsecure": false,
+                    "minVersion": "1.2",
                     "alpn": [
                         "http/1.1"
                     ],
                     "certificates": [
                         {
                             "certificateFile": "$cert_dir/cert.pem",
-                            "keyFile": "$cert_dir/key.pem"
+                            "keyFile": "$cert_dir/key.pem",
+                            "ocspStapling": 3600
                         }
                     ]
                 }
@@ -541,10 +555,10 @@ install_all() {
 	check_env
 	install_packages
 	install_acme
-	install_nginx
 	install_xray
 	issue_certificate
 	xray_restart
+	install_nginx
 	finish
 	exit 0
 }
@@ -657,6 +671,7 @@ menu() {
 	echo -e "  ${Green}7.${Font} 查看 实时错误日志"
 	echo -e "  ${Green}8.${Font} 查看 xray 配置信息"
 	echo -e "  ${Green}9.${Font} 重启 xray"
+	echo -e " ---------------------------------------"
 	echo -e "  ${Green}10.${Font} Switch to English"
 	echo ""
 	echo -e "  ${Green}11.${Font} 退出"
