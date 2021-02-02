@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.0.90"
+script_version="1.0.91"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 website_dir="/home/wwwroot"
@@ -457,7 +457,7 @@ server
 {
 	listen 80;
 	server_name $xray_domain;
-	return 301 https://$http_host$request_uri;
+	return 301 https://\$http_host\$request_uri;
 
 	access_log  /dev/null;
 	error_log  /dev/null;
