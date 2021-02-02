@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.0.85"
+script_version="1.0.86"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 website_dir="/home/wwwroot"
@@ -103,6 +103,7 @@ configure_firewall() {
 		firewall-cmd --reload || fail=1
 	else
 		warning "请自行配置防火墙"
+		return 0
 	fi
 	if [[ $fail -eq 1 ]]; then
 		warning "防火墙配置失败，请手动配置"
