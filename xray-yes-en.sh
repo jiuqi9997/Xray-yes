@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.0.82"
+script_version="1.0.83"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 website_dir="/home/wwwroot"
@@ -530,7 +530,7 @@ prepare_installation() {
 	read -rp "Please enter the port for xray (default 443): " port
 	[[ -z $port ]] && port=443
 	[[ $port > 65535 ]] && echo "Please enter a correct port" && install_all
-	configure_firewall $port
+	[[ $port -ne 443 ]] && configure_firewall $port
 	configure_firewall
 	success "Everything is ready, the installation is about to start."
 }
@@ -590,6 +590,8 @@ mod_port() {
 	read -rp "Please enter the port for xray (default 443): " port
 	[[ -z $port ]] && port=443
 	[[ $port > 65535 ]] && echo "Please enter a correct port" && mod_port
+	[[ $port -ne 443 ]] && configure_firewall $port
+	configure_firewall
 	sed -i "s/$port_old/$port/g" $xray_conf $info_file
 	[[ $(grep "$port" $xray_conf ) ]] && success "Successfully modified the port"
 	sleep 2

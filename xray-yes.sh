@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.0.82"
+script_version="1.0.83"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 website_dir="/home/wwwroot"
@@ -530,7 +530,7 @@ prepare_installation() {
 	read -rp "请输入 xray 端口（默认为 443）：" port
 	[[ -z $port ]] && port=443
 	[[ $port > 65535 ]] && echo "请输入正确的端口" && install_all
-	configure_firewall $port
+	[[ $port -ne 443 ]] && configure_firewall $port
 	configure_firewall
 	success "准备完成，即将开始安装"
 }
@@ -590,6 +590,8 @@ mod_port() {
 	read -rp "请输入 xray 端口（默认为 443）：" port
 	[[ -z $port ]] && port=443
 	[[ $port > 65535 ]] && echo "请输入正确的端口" && mod_port
+	[[ $port -ne 443 ]] && configure_firewall $port
+	configure_firewall
 	sed -i "s/$port_old/$port/g" $xray_conf $info_file
 	[[ $(grep "$port" $xray_conf ) ]] && success "端口修改成功"
 	sleep 2
