@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.0.92"
+script_version="1.0.95"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 website_dir="/home/wwwroot"
@@ -334,7 +334,13 @@ configure_xray() {
                 "decryption": "none",
                 "fallbacks": [
                     {
-                        "dest": 8080,
+                        "dest": $nport,
+                        "alpn": "http/1.1",
+                        "xver": 1
+                    },
+                    {
+                        "dest": $nport1,
+                        "alpn": "h2",
                         "xver": 1
                     }
                 ]
@@ -345,9 +351,6 @@ configure_xray() {
                 "xtlsSettings": {
                     "allowInsecure": false,
                     "minVersion": "1.2",
-                    "alpn": [
-                        "http/1.1"
-                    ],
                     "certificates": [
                         {
                             "certificateFile": "$cert_dir/cert.pem",
@@ -452,6 +455,12 @@ configure_nginx() {
 	tar xzvf web.tar.gz -C /home/wwwroot/$xray_domain
 	rm -rf web.tar.gz
 	mkdir -p "$nginx_conf_dir/vhost"
+	nport=$(rand 10000 20000)
+	nport1=`expr $nport +1`
+	while [[ $(ss -tnlp | grep ":$nport ") || $(ss -tnlp | grep ":$nport1 ") ]]; do
+		nport=$(rand 10000 20000)
+		nport1=`expr $nport + 1`
+	done
 	cat > "$nginx_conf_dir/vhost/$xray_domain.conf" <<EOF
 server
 {
@@ -465,7 +474,8 @@ server
 
 server
 {
-	listen 8080 proxy_protocol;
+	listen $nport proxy_protocol;
+	listen $nport1 http2 proxy_protocol;
 	server_name $xray_domain;
 	index index.html index.htm index.php default.php default.htm default.html;
 	root /home/wwwroot/$xray_domain;
@@ -548,6 +558,13 @@ http
 		include /etc/nginx/conf/vhost/*.conf;
 }
 EOF
+}
+
+rand() {
+	min=$1
+	max=$(($2-$min+1))
+	num=$(cat /dev/urandom | head -n 10 | cksum | awk -F ' ' '{print $1}')
+	echo $(($num%$max+$min))
 }
 
 nginx_systemd() {
