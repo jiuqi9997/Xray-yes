@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.0.95"
+script_version="1.0.96"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 website_dir="/home/wwwroot"
@@ -205,6 +205,12 @@ prepare_installation() {
 	[[ $port > 65535 ]] && echo "请输入正确的端口" && install_all
 	[[ $port -ne 443 ]] && configure_firewall $port
 	configure_firewall
+	nport=$(rand 10000 20000)
+	nport1=`expr $nport +1`
+	while [[ $(ss -tnlp | grep ":$nport ") || $(ss -tnlp | grep ":$nport1 ") ]]; do
+		nport=$(rand 10000 20000)
+		nport1=`expr $nport + 1`
+	done
 	success "准备完成，即将开始安装"
 }
 
@@ -261,6 +267,13 @@ configure_firewall() {
 	elif [[ -z $@ ]]; then
 		success "防火墙配置成功"
 	fi
+}
+
+rand() {
+	min=$1
+	max=$(($2-$min+1))
+	num=$(cat /dev/urandom | head -n 10 | cksum | awk -F ' ' '{print $1}')
+	echo $(($num%$max+$min))
 }
 
 check_env() {
@@ -455,12 +468,6 @@ configure_nginx() {
 	tar xzvf web.tar.gz -C /home/wwwroot/$xray_domain
 	rm -rf web.tar.gz
 	mkdir -p "$nginx_conf_dir/vhost"
-	nport=$(rand 10000 20000)
-	nport1=`expr $nport +1`
-	while [[ $(ss -tnlp | grep ":$nport ") || $(ss -tnlp | grep ":$nport1 ") ]]; do
-		nport=$(rand 10000 20000)
-		nport1=`expr $nport + 1`
-	done
 	cat > "$nginx_conf_dir/vhost/$xray_domain.conf" <<EOF
 server
 {
@@ -558,13 +565,6 @@ http
 		include /etc/nginx/conf/vhost/*.conf;
 }
 EOF
-}
-
-rand() {
-	min=$1
-	max=$(($2-$min+1))
-	num=$(cat /dev/urandom | head -n 10 | cksum | awk -F ' ' '{print $1}')
-	echo $(($num%$max+$min))
 }
 
 nginx_systemd() {
