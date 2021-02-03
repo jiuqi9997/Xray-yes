@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.0.96"
+script_version="1.0.97"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 website_dir="/home/wwwroot"
@@ -206,7 +206,7 @@ prepare_installation() {
 	[[ $port -ne 443 ]] && configure_firewall $port
 	configure_firewall
 	nport=$(rand 10000 20000)
-	nport1=`expr $nport +1`
+	nport1=`expr $nport + 1`
 	while [[ $(ss -tnlp | grep ":$nport ") || $(ss -tnlp | grep ":$nport1 ") ]]; do
 		nport=$(rand 10000 20000)
 		nport1=`expr $nport + 1`
