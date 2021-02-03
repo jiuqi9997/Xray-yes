@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.0.91"
+script_version="1.0.92"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 website_dir="/home/wwwroot"
@@ -661,7 +661,7 @@ menu() {
 	echo ""
 	echo -e " ---------------------------------------"
 	echo -e "  ${Green}0.${Font} Update the script"
-	echo -e "  ${Green}1.${Font} Install xray (vless+tcp+xtls+nginx)"
+	echo -e "  ${Green}1.${Font} Install xray (VLESS+tcp+xtls+nginx)"
 	echo -e "  ${Green}2.${Font} Update xray core"
 	echo -e "  ${Green}3.${Font} Uninstall xray+nginx"
 	echo -e " ---------------------------------------"
