@@ -10,32 +10,16 @@ xray 回落到 nginx，nginx 作为后端，存放一个静态网站
 
 ## 使用
 ### 交互式
-`bash <(curl -L git.io/xray-yes)`
-
-或
-
-`wget -O xray-yes.sh git.io/xray-yes && bash xray-yes.sh`
+`bash -c "$(curl -L git.io/xray-yes)"`
 
 ### 安装
-`bash <(curl -L git.io/xray-yes) install`
-
-或
-
-`wget -O xray-yes.sh git.io/xray-yes && bash xray-yes.sh install`
+`bash -c "$(curl -L git.io/xray-yes)" - install`
 
 ### 更新
-`bash <(curl -L git.io/xray-yes) update`
-
-或
-
-`wget -O xray-yes.sh git.io/xray-yes && bash xray-yes.sh update`
+`bash -c "$(curl -L git.io/xray-yes)" - update`
 
 ### 卸载
-`bash <(curl -L git.io/xray-yes) remove`
-
-或
-
-`wget -O xray-yes.sh git.io/xray-yes && bash xray-yes.sh remove`
+`bash -c "$(curl -L git.io/xray-yes)" - remove`
 
 ## 功能
 全自动编译 Nginx、配置静态页面、申请证书、安装 xray
@@ -58,32 +42,16 @@ Xray falls back to nginx, which is used as the backend to store a static website
 
 ## Usage
 ### Interactive
-`bash <(curl -L git.io/xray-yes-en)`
-
-or
-
-`wget -O xray-yes-en.sh git.io/xray-yes-en && bash xray-yes-en.sh`
+`bash -c "$(curl -L git.io/xray-yes-en)"`
 
 ### Install
-`bash <(curl -L git.io/xray-yes-en) install`
-
-or
-
-`wget -O xray-yes-en.sh git.io/xray-yes-en && bash xray-yes-en.sh install`
+`bash -c "$(curl -L git.io/xray-yes-en)" - install`
 
 ### Update
-`bash <(curl -L git.io/xray-yes-en) update`
-
-or
-
-`wget -O xray-yes-en.sh git.io/xray-yes-en && bash xray-yes-en.sh update`
+`bash -c "$(curl -L git.io/xray-yes-en)" - update`
 
 ### Remove
-`bash <(curl -L git.io/xray-yes-en) remove`
-
-or
-
-`wget -O xray-yes-en.sh git.io/xray-yes-en && bash xray-yes-en.sh remove`
+`bash -c "$(curl -L git.io/xray-yes-en)" - remove`
 
 ## Functions
 Automatically compile Nginx, configure static pages, issue certificates and install xray
