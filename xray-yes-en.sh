@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.0.98"
+script_version="1.0.99"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 website_dir="/home/wwwroot"
@@ -437,6 +437,8 @@ install_nginx() {
 		--with-ld-opt="-ljemalloc" \
 		--with-openssl=../openssl-"$openssl_version"
 	make -j$(nproc --all) && make install
+	cd ..
+	rm -rf openssl-${openssl_version}* nginx-${nginx_version}*
 	ln -s /etc/nginx/sbin/nginx /usr/bin/nginx
 	configure_nginx
 	nginx_systemd
@@ -457,7 +459,7 @@ install_jemalloc(){
 	echo '/usr/local/lib' >/etc/ld.so.conf.d/local.conf
 	ldconfig
 	cd ..
-	rm -rf jemalloc*
+	rm -rf jemalloc-${jemalloc_version}*
 	[[ ! -f '/usr/local/lib/libjemalloc.so' ]] &&
 	error "Failed to complie jamalloc $jemalloc_version"
 	success "Successfully complied jamalloc $jemalloc_version"
