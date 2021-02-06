@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.0.97"
+script_version="1.0.98"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 website_dir="/home/wwwroot"
@@ -203,7 +203,6 @@ prepare_installation() {
 	read -rp "请输入 xray 端口（默认为 443）：" port
 	[[ -z $port ]] && port=443
 	[[ $port > 65535 ]] && echo "请输入正确的端口" && install_all
-	[[ $port -ne 443 ]] && configure_firewall $port
 	configure_firewall
 	nport=$(rand 10000 20000)
 	nport1=`expr $nport + 1`
@@ -241,22 +240,24 @@ get_info() {
 configure_firewall() {
 	fail=0
 	if [[ $(type -P ufw) ]]; then
-		if [[ -n $@ ]]; then
-			ufw allow "$@"/tcp || fail=1
-			success "开放 $@ 端口成功"
-		else
-			ufw allow 22,80,443/tcp || fail=1
+		if [[ $port -ne 443 ]]; then
+			ufw allow "$port"/tcp || fail=1
+			ufw allow "$port"/udp || fail=1
+			success "开放 $port 端口成功"
 		fi
+		ufw allow 22,80,443/tcp || fail=1
+		ufw allow 22,80,443/udp || fail=1
 		yes|ufw enable || fail=1
 		yes|ufw reload || fail=1
 	elif [[ $(type -P firewalld) ]]; then
 		systemctl start --now firewalld
-		if [[ -n $@ ]]; then
-			firewall-offline-cmd --add-port="$@"/tcp || fail=1
-			success "开放 $@ 端口成功"
-		else
-			firewall-offline-cmd --add-port=22/tcp --add-port=80/tcp --add-port=443/tcp || fail=1
+		if [[ $port -ne 443 ]]; then
+			firewall-offline-cmd --add-port="$port"/tcp || fail=1
+			firewall-offline-cmd --add-port="$port"/udp || fail=1
+			success "开放 $port 端口成功"
 		fi
+		firewall-offline-cmd --add-port=22/tcp --add-port=80/tcp --add-port=443/tcp || fail=1
+		firewall-offline-cmd --add-port=22/udp --add-port=80/udp --add-port=443/udp || fail=1
 		firewall-cmd --reload || fail=1
 	else
 		warning "请自行配置防火墙"
@@ -264,7 +265,7 @@ configure_firewall() {
 	fi
 	if [[ $fail -eq 1 ]]; then
 		warning "防火墙配置失败，请手动配置"
-	elif [[ -z $@ ]]; then
+	else
 		success "防火墙配置成功"
 	fi
 }
