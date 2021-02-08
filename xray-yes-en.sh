@@ -602,7 +602,7 @@ finish() {
 	echo -e "$Red Host：$Font $xray_domain" | tee -a $info_file
 	echo -e "$Red TLS：$Font ${RedBG}XTLS${Font}" | tee -a $info_file
 	echo ""
-	echo -e "${GreenBG} Tip: ${Font}You can use flow control ${RedBG}xtls-rprx-splice${Font} on the Linux platform to get better performance"
+	echo -e "${GreenBG} Tip: ${Font}You can use flow control ${RedBG}xtls-rprx-splice${Font} on the Linux platform to get better performance."
 }
 
 update_xray() {
