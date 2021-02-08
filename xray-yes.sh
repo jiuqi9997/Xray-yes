@@ -565,7 +565,7 @@ http
 
 		server_tokens off;
 		access_log off;
-		include /etc/nginx/conf/vhost/*.conf;
+		include $nginx_conf_dir/vhost/*.conf;
 }
 EOF
 }
@@ -602,7 +602,7 @@ finish() {
 	echo -e "$Red 伪装域名（host）：$Font $xray_domain" | tee -a $info_file
 	echo -e "$Red 底层传输安全（tls）：$Font ${RedBG}XTLS${Font}" | tee -a $info_file
 	echo ""
-	echo -e "${GreenBG} 提示：${Font}您可以在 linux 平台上使用流控 ${RedBG}xtls-rprx-splice${Font} 以获得更好的性能"
+	echo -e "${GreenBG} 提示：${Font}您可以在 Linux 平台上使用流控 ${RedBG}xtls-rprx-splice${Font} 以获得更好的性能。"
 }
 
 update_xray() {
