@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.1.10"
+script_version="1.1.11"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 website_dir="/home/wwwroot"
