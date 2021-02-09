@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.1.11"
+script_version="1.1.12"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 website_dir="/home/wwwroot"
@@ -214,27 +214,19 @@ prepare_installation() {
 }
 
 get_info() {
-	if [[ $(type -P yum) ]]; then
+	source "/etc/os-release" || source "/usr/lib/os-release" || panic "不支持此操作系统"
+	if [[ $ID == "centos" ]]; then
 		PM="yum"
 		INS="yum install -y"
-	elif [[ $(type -P dnf) ]]; then
-		PM="dnf"
-		INS="dnf install -y"
-	elif [[ $(type -P apt-get) ]]; then
+	elif [[ $ID == "debian" || $ID == "ubuntu" ]]; then
 		PM="apt-get"
 		INS="apt-get install -y"
-	elif [[ $(type -P pacman) ]]; then
+	elif [[ $ID == "arch" ]]; then
 		PM="pacman"
 		INS="pacman -Syu --noconfirm"
-	elif [[ $(type -P zypper) ]]; then
-		PM="zypper"
-		INS="zypper install -y"
 	else
-		error "不支持此操作系统，正在退出"
+		error "不支持此操作系统"
 	fi
-	source "/etc/os-release" || source "/usr/lib/os-release" || panic "不支持此操作系统，正在退出"
-	sys="$ID"
-	ver="$VERSION_ID"
 }
 
 configure_firewall() {
