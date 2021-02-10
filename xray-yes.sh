@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.1.15"
+script_version="1.1.16"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 nginx_systemd_file="/etc/systemd/system/nginx.service"
@@ -286,8 +286,8 @@ install_packages() {
 	$PM update -y
 	$PM upgrade -y
 	$PM install -y wget curl
-	rpm_packages="libcurl-devel tar gcc make zip unzip openssl openssl-devel libxml2 libxml2-devel libxslt* zlib zlib-devel libjpeg-devel libpng-devel libwebp libwebp-devel freetype freetype-devel lsof pcre pcre-devel crontabs icu libicu-devel c-ares libffi-devel bzip2 bzip2-devel ncurses-devel sqlite-devel readline-devel tk-devel gdbm-devel xz-devel libtermcap-devel libevent-devel libuuid-devel git jq socat"
-	apt_packages="libcurl4-openssl-dev gcc make zip unzip openssl libssl-dev libxml2 libxml2-dev zlib1g zlib1g-dev libjpeg-dev libpng-dev lsof libpcre3 libpcre3-dev cron net-tools swig build-essential libffi-dev libbz2-dev libncurses-dev libsqlite3-dev libreadline-dev tk-dev libgdbm-dev libdb-dev libdb++-dev libpcap-dev xz-utils git libgd3 libgd-dev libevent-dev libncurses5-dev uuid-dev jq bzip2 socat"
+	rpm_packages="libcurl-devel tar gcc make zip unzip openssl openssl-devel libxml2 libxml2-devel libxslt* zlib zlib-devel libjpeg-devel libpng-devel libwebp libwebp-devel freetype freetype-devel lsof pcre pcre-devel crontabs icu libicu-devel c-ares libffi-devel bzip2 bzip2-devel ncurses-devel sqlite-devel readline-devel tk-devel gdbm-devel xz-devel libtermcap-devel libevent-devel libuuid-devel git jq socat openssl"
+	apt_packages="libcurl4-openssl-dev gcc make zip unzip openssl libssl-dev libxml2 libxml2-dev zlib1g zlib1g-dev libjpeg-dev libpng-dev lsof libpcre3 libpcre3-dev cron net-tools swig build-essential libffi-dev libbz2-dev libncurses-dev libsqlite3-dev libreadline-dev tk-dev libgdbm-dev libdb-dev libdb++-dev libpcap-dev xz-utils git libgd3 libgd-dev libevent-dev libncurses5-dev uuid-dev jq bzip2 socat openssl"
 	if [[ $PM == "apt-get" ]]; then
 		$INS $apt_packages
 	elif [[ $PM == "yum" || $PM == "dnf" ]]; then
@@ -390,17 +390,25 @@ issue_certificate() {
 	info "申请 SSL 证书"
 	fail=0
 	/root/.acme.sh/acme.sh --issue -d $xray_domain --keylength ec-256 --fullchain-file "$cert_dir/cert.pem" --key-file "$cert_dir/key.pem" --standalone --force || fail=1
-	self_signed_cert=$(xray tls cert)
-	echo $self_signed_cert | jq '.certificate[]' | sed 's/\"//g' | tee "$cert_dir/self_signed_cert.pem" || fail=1
-	echo $self_signed_cert | jq '.key[]' | sed 's/\"//g' | tee "$cert_dir/self_signed_key.pem" || fail=1
 	[[ $fail -eq 1 ]] && error "证书申请失败"
-	chmod 600 "$cert_dir/cert.pem" "$cert_dir/key.pem"
+	generate_certificate
+	chmod 600 "$cert_dir/cert.pem" "$cert_dir/key.pem" "$cert_dir/self_signed_cert.pem" "$cert_dir/self_signed_key.pem"
 	if [[ $(grep "nogroup" /etc/group) ]]; then
 		chown nobody:nogroup "$cert_dir/cert.pem" "$cert_dir/key.pem" "$cert_dir/self_signed_cert.pem" "$cert_dir/self_signed_key.pem"
 	else
 		chown nobody:nobody "$cert_dir/cert.pem" "$cert_dir/key.pem" "$cert_dir/self_signed_cert.pem" "$cert_dir/self_signed_key.pem"
 	fi
 	success "证书申请成功"
+}
+
+generate_certificate() {
+    info "生成自签名证书"
+    openssl genrsa -des3 -passout pass:xxxx -out server.pass.key 2048
+    openssl rsa -passin pass:xxxx -in server.pass.key -out "$cert_dir/self_signed_key.pem"
+    rm -rf server.pass.key
+    openssl req -new -key "$cert_dir/self_signed_key.pem" -out "$cert_dir/self_signed_cert.pem" -subj "/CN=$server_ip"
+    [[ ! -f "$cert_dir/self_signed_cert.pem" || ! -f "$cert_dir/self_signed_key.pem" ]] && error "生成自签名证书失败"
+    success "生成自签名证书成功"
 }
 
 xray_restart() {
