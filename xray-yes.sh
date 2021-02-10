@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.1.13"
+script_version="1.1.14"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 website_dir="/home/wwwroot"
@@ -395,9 +395,9 @@ issue_certificate() {
 	[[ $fail -eq 1 ]] && error "证书申请失败"
 	chmod 600 "$cert_dir/cert.pem" "$cert_dir/key.pem"
 	if [[ $(grep "nogroup" /etc/group) ]]; then
-		chown nobody:nogroup "$cert_dir/cert.pem" "$cert_dir/key.pem"
+		chown nobody:nogroup "$cert_dir/cert.pem" "$cert_dir/key.pem" "$cert_dir/self_signed_cert.pem" "$cert_dir/self_signed_key.pem"
 	else
-		chown nobody:nobody "$cert_dir/cert.pem" "$cert_dir/key.pem"
+		chown nobody:nobody "$cert_dir/cert.pem" "$cert_dir/key.pem" "$cert_dir/self_signed_cert.pem" "$cert_dir/self_signed_key.pem"
 	fi
 	success "证书申请成功"
 }
