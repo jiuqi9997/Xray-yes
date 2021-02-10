@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.1.12"
+script_version="1.1.13"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 website_dir="/home/wwwroot"
@@ -359,6 +359,10 @@ configure_xray() {
                     "minVersion": "1.2",
                     "certificates": [
                         {
+                            "certificateFile": "$cert_dir/self_signed_cert.pem",
+                            "keyFile": "$cert_dir/self_signed_key.pem"
+                        },
+                        {
                             "certificateFile": "$cert_dir/cert.pem",
                             "keyFile": "$cert_dir/key.pem",
                             "ocspStapling": 3600
@@ -386,6 +390,9 @@ issue_certificate() {
 	info "Issue a ssl certificate"
 	/root/.acme.sh/acme.sh --issue -d $xray_domain --keylength ec-256 --fullchain-file "$cert_dir/cert.pem" --key-file "$cert_dir/key.pem" --standalone --force || fail=1
 	[[ $fail -eq 1 ]] && error "Failed to issue a ssl certificate"
+	self_signed_cert=$(xray tls cert)
+	echo $self_signed_cert | jq '.certificate[]' | sed 's/\"//g' | tee "$cert_dir/self_signed_cert.pem" || fail=1
+	echo $self_signed_cert | jq '.key[]' | sed 's/\"//g' | tee "$cert_dir/self_signed_key.pem" || fail=1
 	chmod 600 "$cert_dir/cert.pem" "$cert_dir/key.pem"
 	if [[ $(grep "nogroup" /etc/group) ]]; then
 		chown nobody:nogroup "$cert_dir/cert.pem" "$cert_dir/key.pem"
