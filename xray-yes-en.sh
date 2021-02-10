@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.1.16"
+script_version="1.1.17"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 nginx_systemd_file="/etc/systemd/system/nginx.service"
@@ -356,7 +356,6 @@ configure_xray() {
                 "network": "tcp",
                 "security": "xtls",
                 "xtlsSettings": {
-                    "allowInsecure": false,
                     "minVersion": "1.2",
                     "certificates": [
                         {
@@ -406,7 +405,9 @@ generate_certificate() {
     openssl genrsa -des3 -passout pass:xxxx -out server.pass.key 2048
     openssl rsa -passin pass:xxxx -in server.pass.key -out "$cert_dir/self_signed_key.pem"
     rm -rf server.pass.key
-    openssl req -new -key "$cert_dir/self_signed_key.pem" -out "$cert_dir/self_signed_cert.pem" -subj "/CN=$server_ip"
+    openssl req -new -key "$cert_dir/self_signed_key.pem" -out server.csr -subj "/CN=$server_ip"
+    openssl x509 -req -days 3650 -in server.csr -signkey "$cert_dir/self_signed_key.pem" -out "$cert_dir/self_signed_cert.pem"
+    rm -rf server.csr
     [[ ! -f "$cert_dir/self_signed_cert.pem" || ! -f "$cert_dir/self_signed_key.pem" ]] && error "Failed to generate a self-signed certificate"
     success "Successfully generated a self-signed certificate"
 }
