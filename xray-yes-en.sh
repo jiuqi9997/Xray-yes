@@ -8,9 +8,10 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.1.14"
+script_version="1.1.15"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
+nginx_systemd_file="/etc/systemd/system/nginx.service"
 website_dir="/home/wwwroot"
 nginx_version="1.18.0"
 openssl_version="1.1.1g"
@@ -570,7 +571,7 @@ EOF
 }
 
 nginx_systemd() {
-	cat > "/etc/systemd/system/nginx.service" <<EOF
+	cat > "$nginx_systemd_file" <<EOF
 [Unit]
 Description=NGINX web server
 After=syslog.target network.target remote-fs.target nss-lookup.target
