@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.1.18"
+script_version="1.1.20"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 nginx_systemd_file="/etc/systemd/system/nginx.service"
@@ -365,8 +365,7 @@ configure_xray() {
                         },
                         {
                             "certificateFile": "$cert_dir/cert.pem",
-                            "keyFile": "$cert_dir/key.pem",
-                            "ocspStapling": 3600
+                            "keyFile": "$cert_dir/key.pem"
                         }
                     ]
                 }
@@ -402,15 +401,15 @@ issue_certificate() {
 }
 
 generate_certificate() {
-    info "Generate a self-signed certificate"
-    openssl genrsa -des3 -passout pass:xxxx -out server.pass.key 2048
-    openssl rsa -passin pass:xxxx -in server.pass.key -out "$cert_dir/self_signed_key.pem"
-    rm -rf server.pass.key
-    openssl req -new -key "$cert_dir/self_signed_key.pem" -out server.csr -subj "/CN=$server_ip"
-    openssl x509 -req -days 3650 -in server.csr -signkey "$cert_dir/self_signed_key.pem" -out "$cert_dir/self_signed_cert.pem"
-    rm -rf server.csr
-    [[ ! -f "$cert_dir/self_signed_cert.pem" || ! -f "$cert_dir/self_signed_key.pem" ]] && error "Failed to generate a self-signed certificate"
-    success "Successfully generated a self-signed certificate"
+	info "Generate a self-signed certificate"
+	openssl genrsa -des3 -passout pass:xxxx -out server.pass.key 2048
+	openssl rsa -passin pass:xxxx -in server.pass.key -out "$cert_dir/self_signed_key.pem"
+	rm -rf server.pass.key
+	openssl req -new -key "$cert_dir/self_signed_key.pem" -out server.csr -subj "/CN=$server_ip"
+	openssl x509 -req -days 3650 -in server.csr -signkey "$cert_dir/self_signed_key.pem" -out "$cert_dir/self_signed_cert.pem"
+	rm -rf server.csr
+	[[ ! -f "$cert_dir/self_signed_cert.pem" || ! -f "$cert_dir/self_signed_key.pem" ]] && error "Failed to generate a self-signed certificate"
+	success "Successfully generated a self-signed certificate"
 }
 
 xray_restart() {
@@ -485,6 +484,7 @@ configure_nginx() {
 server
 {
 	listen 80;
+	listen [::]:80;
 	server_name $xray_domain;
 	return 301 https://\$http_host\$request_uri;
 
@@ -494,8 +494,23 @@ server
 
 server
 {
+	listen $nport default_server;
+	listen [::]:$nport default_server;
+	listen $nport1 http2 default_server;
+	listen [::]:$nport1 http2 default_server;
+
+	return 444;
+
+	access_log /dev/null;
+	error_log /dev/null;
+}
+
+server
+{
 	listen $nport proxy_protocol;
+	listen [::]:$nport proxy_protocol;
 	listen $nport1 http2 proxy_protocol;
+	listen [::]:$nport1 http2 proxy_protocol;
 	server_name $xray_domain;
 	index index.html index.htm index.php default.php default.htm default.html;
 	root /home/wwwroot/$xray_domain;
@@ -575,6 +590,18 @@ http
 
 		server_tokens off;
 		access_log off;
+
+		server
+		{
+			listen 80 default_server;
+			listen [::]:80 default_server;
+
+			return 444;
+
+			access_log /dev/null;
+			error_log /dev/null;
+		}
+
 		include $nginx_conf_dir/vhost/*.conf;
 }
 EOF
