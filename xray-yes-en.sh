@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.1.20"
+script_version="1.1.21"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 nginx_systemd_file="/etc/systemd/system/nginx.service"
@@ -239,7 +239,7 @@ configure_firewall() {
 			success "Successfully opened port $port"
 		fi
 		ufw allow 22,80,443/tcp || fail=1
-		ufw allow 22,80,443/udp || fail=1
+		ufw allow 22,80,443,1024:65535/udp || fail=1
 		yes|ufw enable || fail=1
 		yes|ufw reload || fail=1
 	elif [[ $(type -P firewalld) ]]; then
@@ -250,7 +250,7 @@ configure_firewall() {
 			success "Successfully opened port $port"
 		fi
 		firewall-offline-cmd --add-port=22/tcp --add-port=80/tcp --add-port=443/tcp || fail=1
-		firewall-offline-cmd --add-port=22/udp --add-port=80/udp --add-port=443/udp || fail=1
+		firewall-offline-cmd --add-port=22/udp --add-port=80/udp --add-port=443/udp --add-port=1024-65535/udp || fail=1
 		firewall-cmd --reload || fail=1
 	else
 		warning "Please configure the firewall by yourself."
