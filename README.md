@@ -36,8 +36,6 @@ bash -c "$(curl -L git.io/xray-yes)" - remove
 
 <br />
 
-<br />
-
 # XRAY YES!
 ###
 Another shell script to install Xray
@@ -71,3 +69,11 @@ bash -c "$(curl -L git.io/xray-yes-en)" - remove
 
 ## Functions
 Automatically compile nginx, configure static pages, issue certificates and install xray
+
+<br />
+
+<br />
+
+## Stargazers over time
+
+[![Stargazers over time](https://starchart.cc/jiuqi9997/Xray-yes.svg)](https://starchart.cc/jiuqi9997/Xray-yes)
