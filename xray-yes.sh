@@ -1,6 +1,6 @@
 #!/bin/bash
-# Github: https://github.com/jiuqi9997/xray-yes
-# Script link: https://github.com/jiuqi9997/xray-yes/raw/main/xray-yes.sh
+# Github: https://github.com/jiuqi9997/Xray-yes
+# Script link: https://github.com/jiuqi9997/Xray-yes/raw/main/xray-yes.sh
 #
 # Thanks for using.
 #
@@ -8,9 +8,9 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.1.27"
-nginx_dir="/etc/nginx"
-nginx_conf_dir="/etc/nginx/conf"
+script_version="1.1.30"
+nginx_dir="/usr/local/nginx"
+nginx_conf_dir="/usr/local/nginx/conf"
 nginx_systemd_file="/etc/systemd/system/nginx.service"
 website_dir="/home/wwwroot"
 nginx_version="1.18.0"
@@ -63,10 +63,10 @@ panic() {
 
 update_script() {
 	fail=0
-	ver=$(curl -sL github.com/jiuqi9997/xray-yes/raw/main/xray-yes.sh | grep "script_version=" | head -1 | awk -F '=|"' '{print $3}')
+	ver=$(curl -sL github.com/jiuqi9997/Xray-yes/raw/main/xray-yes.sh | grep "script_version=" | head -1 | awk -F '=|"' '{print $3}')
 	if [[ $script_version != $ver ]]; then
-		wget -O xray-yes.sh github.com/jiuqi9997/xray-yes/raw/main/xray-yes.sh || fail=1
-		[[ $fail -eq 1 ]] && error "更新失败"
+		wget -O xray-yes.sh github.com/jiuqi9997/Xray-yes/raw/main/xray-yes.sh || fail=1
+		[[ $fail -eq 1 ]] && warning "更新失败" && sleep 2 && return 0
 		success "更新成功"
 		sleep 2
 		bash xray-yes.sh $@
@@ -310,10 +310,10 @@ install_acme() {
 }
 
 install_xray() {
-	info "安装 xary"
+	info "安装 Xray"
 	curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s -- install
-	[[ ! $(ps aux | grep xray) ]] && error "xray 安装失败"
-	success "xray 安装成功"
+	[[ ! $(ps aux | grep xray) ]] && error "Xray 安装失败"
+	success "Xray 安装成功"
 }
 
 install_nginx() {
@@ -344,7 +344,7 @@ install_nginx() {
 	make -j$(nproc --all) && make install
 	cd ..
 	rm -rf openssl-${openssl_version}* nginx-${nginx_version}*
-	ln -s /etc/nginx/sbin/nginx /usr/bin/nginx
+	ln -s $nginx_dir/sbin/nginx /usr/bin/nginx
 	nginx_systemd
 	systemctl enable nginx
 	systemctl stop nginx
@@ -377,10 +377,10 @@ Description=NGINX web server
 After=syslog.target network.target remote-fs.target nss-lookup.target
 [Service]
 Type=forking
-PIDFile=/etc/nginx/logs/nginx.pid
-ExecStartPre=/etc/nginx/sbin/nginx -t
-ExecStart=/etc/nginx/sbin/nginx -c ${nginx_dir}/conf/nginx.conf
-ExecReload=/etc/nginx/sbin/nginx -s reload
+PIDFile=$nginx_dir/logs/nginx.pid
+ExecStartPre=$nginx_dir/sbin/nginx -t
+ExecStart=$nginx_dir/sbin/nginx -c ${nginx_dir}/conf/nginx.conf
+ExecReload=$nginx_dir/sbin/nginx -s reload
 ExecStop=/bin/kill -s QUIT \$MAINPID
 PrivateTmp=true
 [Install]
@@ -574,15 +574,15 @@ EOF
 
 xray_restart() {
 	systemctl restart xray
-	[[ ! $(ps aux | grep xray) ]] && error "xray 重启失败"
-	success "xray 重启成功"
+	[[ ! $(ps aux | grep xray) ]] && error "Xray 重启失败"
+	success "Xray 重启成功"
 	sleep 2
 }
 
 configure_nginx() {
 	rm -rf $website_dir/$xray_domain
 	mkdir -p $website_dir/$xray_domain
-	wget -O web.tar.gz https://github.com/jiuqi9997/xray-yes/raw/main/web.tar.gz
+	wget -O web.tar.gz https://github.com/jiuqi9997/Xray-yes/raw/main/web.tar.gz
 	tar xzvf web.tar.gz -C $website_dir/$xray_domain
 	rm -rf web.tar.gz
 	cat > $nginx_conf_dir/vhost/$xray_domain.conf <<EOF
@@ -642,10 +642,10 @@ EOF
 }
 
 finish() {
-	success "VLESS+tcp+xtls+nginx 安装成功"
+	success "Xray 安装成功 (VLESS+tcp+xtls+nginx)"
 	echo ""
 	echo ""
-	echo -e "$Red xray 配置信息 $Font" | tee $info_file
+	echo -e "$Red Xray 配置信息 $Font" | tee $info_file
 	echo -e "$Red 地址（address）:$Font $server_ip " | tee -a $info_file
 	echo -e "$Red 端口（port）:$Font $port " | tee -a $info_file
 	echo -e "$Red 用户id（UUID/密码）:$Font $uuid" | tee -a $info_file
@@ -660,18 +660,19 @@ finish() {
 
 update_xray() {
 	curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s -- install
-	[[ ! $(ps aux | grep xray) ]] && error "xray 更新失败"
-	success "xray 更新成功"
+	[[ ! $(ps aux | grep xray) ]] && error "Xray 更新失败"
+	success "Xray 更新成功"
 }
 
 uninstall_all() {
 	curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s -- remove --purge
 	systemctl stop nginx
+	rm -rf /usr/bin/nginx
 	rm -rf $nginx_systemd_file
 	rm -rf $nginx_dir
 	rm -rf $website_dir
 	rm -rf $info_file
-	success "卸载完成"
+	success "已卸载 Xray 和 nginx"
 	exit 0
 }
 
@@ -680,7 +681,7 @@ mod_uuid() {
 	uuid_old=$(jq '.inbounds[].settings.clients[].id' $xray_conf || fail=1)
 	[[ $(echo $uuid_old | jq '' | wc -l) > 1 ]] && error "有多个 UUID，请自行修改"
 	uuid_old=$(echo $uuid_old | sed 's/\"//g')
-	read -rp "请输入 xray 密码（默认使用 UUID）：" uuid
+	read -rp "请输入 Xray 密码（默认使用 UUID）：" uuid
 	[[ -z $uuid ]] && uuid=$(xray uuid)
 	sed -i "s/$uuid_old/$uuid/g" $xray_conf $info_file
 	[[ $(grep "$uuid" $xray_conf ) ]] && success "UUID 修改成功"
@@ -693,7 +694,7 @@ mod_port() {
 	fail=0
 	port_old=$(jq '.inbounds[].port' $xray_conf || fail=1)
 	[[ $(echo $port_old | jq '' | wc -l) > 1 ]] && error "有多个端口，请自行修改"
-	read -rp "请输入 xray 端口（默认为 443）：" port
+	read -rp "请输入 Xray 端口（默认为 443）：" port
 	[[ -z $port ]] && port=443
 	[[ $port > 65535 ]] && echo "请输入正确的端口" && mod_port
 	[[ $port -ne 443 ]] && configure_firewall $port
@@ -719,7 +720,7 @@ show_configuration() {
 }
 
 switch_to_en() {
-	wget -O xray-yes-en.sh https://github.com/jiuqi9997/xray-yes/raw/main/xray-yes-en.sh
+	wget -O xray-yes-en.sh https://github.com/jiuqi9997/Xray-yes/raw/main/xray-yes-en.sh
 	echo "English version: xray-yes-en.sh"
 	sleep 5
 	bash xray-yes-en.sh
@@ -729,22 +730,22 @@ switch_to_en() {
 menu() {
 	clear
 	echo ""
-	echo -e "  XRAY-YES - 安装管理 xray $Red[$script_version]$Font"
-	echo -e "  https://github.com/jiuqi9997/xray-yes"
+	echo -e "  XRAY-YES - 安装管理 Xray $Red[$script_version]$Font"
+	echo -e "  https://github.com/jiuqi9997/Xray-yes"
 	echo ""
 	echo -e " ---------------------------------------"
 	echo -e "  ${Green}0.${Font} 升级 脚本"
-	echo -e "  ${Green}1.${Font} 安装 xray (VLESS+tcp+xtls+nginx)"
-	echo -e "  ${Green}2.${Font} 升级 xray core"
-	echo -e "  ${Green}3.${Font} 卸载 xray+nginx"
+	echo -e "  ${Green}1.${Font} 安装 Xray (VLESS+tcp+xtls+nginx)"
+	echo -e "  ${Green}2.${Font} 升级 Xray core"
+	echo -e "  ${Green}3.${Font} 卸载 Xray&nginx"
 	echo -e " ---------------------------------------"
 	echo -e "  ${Green}4.${Font} 修改 UUID"
 	echo -e "  ${Green}5.${Font} 修改 端口"
 	echo -e " ---------------------------------------"
 	echo -e "  ${Green}6.${Font} 查看 实时访问日志"
 	echo -e "  ${Green}7.${Font} 查看 实时错误日志"
-	echo -e "  ${Green}8.${Font} 查看 xray 配置信息"
-	echo -e "  ${Green}9.${Font} 重启 xray"
+	echo -e "  ${Green}8.${Font} 查看 Xray 配置信息"
+	echo -e "  ${Green}9.${Font} 重启 Xray"
 	echo -e " ---------------------------------------"
 	echo -e "  ${Green}10.${Font} Switch to English"
 	echo ""
