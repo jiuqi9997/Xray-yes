@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.1.23"
+script_version="1.1.25"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 nginx_systemd_file="/etc/systemd/system/nginx.service"
@@ -82,9 +82,11 @@ install_all() {
 	install_packages
 	install_acme
 	install_xray
-	issue_certificate
-	xray_restart
 	install_nginx
+	issue_certificate
+	configure_xray
+	xray_restart
+	configure_nginx
 	finish
 	exit 0
 }
@@ -103,7 +105,7 @@ prepare_installation() {
 	read -rp "Enter a number (default IPv4 only): " ip_type
 	[[ -z $ip_type ]] && ip_type=1
 	if [[ $ip_type -eq 1 ]]; then
-		domain_ip=$(ping -4 "$xray_domain" -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
+		domain_ip=$(ping -4 $xray_domain -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
 		server_ip=$(curl -sL https://api64.ipify.org -4 || fail=1)
 		[[ $fail -eq 1 ]] && error "Failed to get local IP address"
 		[[ $server_ip == $domain_ip ]] && success "The domain name has been resolved to the local IP address" && success=1
@@ -127,7 +129,7 @@ prepare_installation() {
 			esac
 		fi
 	elif [[ $ip_type -eq 2 ]]; then
-		domain_ip=$(ping -6 "$xray_domain" -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
+		domain_ip=$(ping -6 $xray_domain -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
 		server_ip=$(curl -sL https://api64.ipify.org -6 || fail=1)
 		[[ $fail -eq 1 ]] && error "Failed to get the local IP address"
 		[[ $server_ip == $domain_ip ]] && success "The domain name has been resolved to the local IP address" && success=1
@@ -151,7 +153,7 @@ prepare_installation() {
 			esac
 		fi
 	elif [[ $ip_type -eq 3 ]]; then
-		domain_ip=$(ping -4 "$xray_domain" -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
+		domain_ip=$(ping -4 $xray_domain -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
 		server_ip=$(curl -sL https://api64.ipify.org -4 || fail=1)
 		[[ $fail -eq 1 ]] && error "Failed to get the local IP address (IPv4)"
 		[[ $server_ip == $domain_ip ]] && success "The domain name has been resolved to the local IP address (IPv4)" && success=1
@@ -174,7 +176,7 @@ prepare_installation() {
 				;;
 			esac
 		fi
-		domain_ip6=$(ping -6 "$xray_domain" -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
+		domain_ip6=$(ping -6 $xray_domain -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
 		server_ip6=$(curl https://api64.ipify.org -6 || fail=1)
 		[[ $fail -eq 1 ]] && error "Failed to get the local IP address (IPv6)"
 		[[ $server_ip == $domain_ip ]] && success "The domain name has been resolved to the local IP address (IPv6)" && success=1
@@ -215,7 +217,7 @@ prepare_installation() {
 }
 
 get_info() {
-	source "/etc/os-release" || source "/usr/lib/os-release" || panic "The operating system is not supported"
+	source /etc/os-release || source /usr/lib/os-release || panic "The operating system is not supported"
 	if [[ $ID == "centos" ]]; then
 		PM="yum"
 		INS="yum install -y"
@@ -234,8 +236,8 @@ configure_firewall() {
 	fail=0
 	if [[ $(type -P ufw) ]]; then
 		if [[ $port -ne 443 ]]; then
-			ufw allow "$port"/tcp || fail=1
-			ufw allow "$port"/udp || fail=1
+			ufw allow $port/tcp || fail=1
+			ufw allow $port/udp || fail=1
 			success "Successfully opened port $port"
 		fi
 		ufw allow 22,80,443/tcp || fail=1
@@ -245,8 +247,8 @@ configure_firewall() {
 	elif [[ $(type -P firewalld) ]]; then
 		systemctl start --now firewalld
 		if [[ $port -ne 443 ]]; then
-			firewall-offline-cmd --add-port="$port"/tcp || fail=1
-			firewall-offline-cmd --add-port="$port"/udp || fail=1
+			firewall-offline-cmd --add-port=$port/tcp || fail=1
+			firewall-offline-cmd --add-port=$port/udp || fail=1
 			success "Successfully opened port $port"
 		fi
 		firewall-offline-cmd --add-port=22/tcp --add-port=80/tcp --add-port=443/tcp || fail=1
@@ -310,11 +312,123 @@ install_acme() {
 install_xray() {
 	info "Install xray"
 	curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s -- install
-	configure_xray
-	systemctl stop xray
-	systemctl start --now xray
 	[[ ! $(ps aux | grep xray) ]] && error "Failed to install xray"
 	success "Successfully installed xray"
+}
+
+install_nginx() {
+	[[ ! -f /usr/local/lib/libjemalloc.so ]] && install_jemalloc
+	info "Complie nginx $nginx_version"
+	wget -O openssl-${openssl_version}.tar.gz https://www.openssl.org/source/openssl-$openssl_version.tar.gz
+	wget -O nginx-${nginx_version}.tar.gz http://nginx.org/download/nginx-${nginx_version}.tar.gz
+	[[ -d nginx-$nginx_version ]] && rm -rf nginx-$nginx_version
+	tar -xzvf nginx-$nginx_version.tar.gz
+	[[ -d openssl-$openssl_version ]] && rm -rf openssl-$openssl_version
+	tar -xzvf openssl-$openssl_version.tar.gz
+	cd nginx-$nginx_version
+	echo '/usr/local/lib' >/etc/ld.so.conf.d/local.conf
+	ldconfig
+	./configure --prefix=${nginx_dir} \
+		--with-http_ssl_module \
+		--with-http_gzip_static_module \
+		--with-http_stub_status_module \
+		--with-pcre \
+		--with-http_realip_module \
+		--with-http_flv_module \
+		--with-http_mp4_module \
+		--with-http_secure_link_module \
+		--with-http_v2_module \
+		--with-cc-opt="-O3" \
+		--with-ld-opt="-ljemalloc" \
+		--with-openssl=../openssl-$openssl_version
+	make -j$(nproc --all) && make install
+	cd ..
+	rm -rf openssl-${openssl_version}* nginx-${nginx_version}*
+	ln -s /etc/nginx/sbin/nginx /usr/bin/nginx
+	nginx_systemd
+	systemctl enable nginx
+	systemctl stop nginx
+	systemctl start nginx
+	[[ ! $(type -P nginx) ]] &&
+	error "Failed to complie nginx $nginx_version"
+	success "Successfully complied nginx $nginx_version"
+}
+
+install_jemalloc(){
+	wget -O jemalloc-$jemalloc_version.tar.bz2 https://github.com/jemalloc/jemalloc/releases/download/$jemalloc_version/jemalloc-$jemalloc_version.tar.bz2
+	tar -xvf jemalloc-$jemalloc_version.tar.bz2
+	cd jemalloc-$jemalloc_version
+	info "Complie jamalloc $jemalloc_version"
+	./configure
+	make -j$(nproc --all) && make install
+	echo '/usr/local/lib' >/etc/ld.so.conf.d/local.conf
+	ldconfig
+	cd ..
+	rm -rf jemalloc-${jemalloc_version}*
+	[[ ! -f /usr/local/lib/libjemalloc.so ]] &&
+	error "Failed to complie jamalloc $jemalloc_version"
+	success "Successfully complied jamalloc $jemalloc_version"
+}
+
+nginx_systemd() {
+	cat > $nginx_systemd_file <<EOF
+[Unit]
+Description=NGINX web server
+After=syslog.target network.target remote-fs.target nss-lookup.target
+[Service]
+Type=forking
+PIDFile=/etc/nginx/logs/nginx.pid
+ExecStartPre=/etc/nginx/sbin/nginx -t
+ExecStart=/etc/nginx/sbin/nginx -c ${nginx_dir}/conf/nginx.conf
+ExecReload=/etc/nginx/sbin/nginx -s reload
+ExecStop=/bin/kill -s QUIT \$MAINPID
+PrivateTmp=true
+[Install]
+WantedBy=multi-user.target
+EOF
+	systemctl daemon-reload
+}
+
+issue_certificate() {
+	fail=0
+	info "Issue a ssl certificate"
+	mkdir -p $nginx_conf_dir/vhost
+	cat > $nginx_conf_dir/vhost/$xray_domain.conf <<EOF
+server
+{
+	listen 80;
+	listen [::]:80;
+	server_name $xray_domain;
+	root $website_dir/$xray_domain;
+
+	access_log /dev/null;
+	error_log /dev/null;
+}
+EOF
+	nginx -s reload
+	/root/.acme.sh/acme.sh --issue -d $xray_domain --keylength ec-256 --fullchain-file $cert_dir/cert.pem --key-file $cert_dir/key.pem --webroot $website_dir/$xray_domain --force || fail=1
+	[[ $fail -eq 1 ]] && error "Failed to issue a ssl certificate"
+	generate_certificate
+	chmod 600 $cert_dir/cert.pem $cert_dir/key.pem $cert_dir/self_signed_cert.pem $cert_dir/self_signed_key.pem
+	if [[ $(grep nogroup /etc/group) ]]; then
+		chown nobody:nogroup $cert_dir/cert.pem $cert_dir/key.pem $cert_dir/self_signed_cert.pem $cert_dir/self_signed_key.pem
+	else
+		chown nobody:nobody $cert_dir/cert.pem $cert_dir/key.pem $cert_dir/self_signed_cert.pem $cert_dir/self_signed_key.pem
+	fi
+	rm -rf $nginx_conf_dir/vhost/$xray_domain.conf
+	success "Successfully issued the ssl certificate"
+}
+
+generate_certificate() {
+	info "Generate a self-signed certificate"
+	openssl genrsa -des3 -passout pass:xxxx -out server.pass.key 2048
+	openssl rsa -passin pass:xxxx -in server.pass.key -out $cert_dir/self_signed_key.pem
+	rm -rf server.pass.key
+	openssl req -new -key $cert_dir/self_signed_key.pem -out server.csr -subj "/CN=$server_ip"
+	openssl x509 -req -days 3650 -in server.csr -signkey $cert_dir/self_signed_key.pem -out $cert_dir/self_signed_cert.pem
+	rm -rf server.csr
+	[[ ! -f $cert_dir/self_signed_cert.pem || ! -f $cert_dir/self_signed_key.pem ]] && error "Failed to generate a self-signed certificate"
+	success "Successfully generated a self-signed certificate"
 }
 
 configure_xray() {
@@ -385,33 +499,6 @@ configure_xray() {
 EOF
 }
 
-issue_certificate() {
-	fail=0
-	info "Issue a ssl certificate"
-	/root/.acme.sh/acme.sh --issue -d $xray_domain --keylength ec-256 --fullchain-file "$cert_dir/cert.pem" --key-file "$cert_dir/key.pem" --standalone --force || fail=1
-	[[ $fail -eq 1 ]] && error "Failed to issue a ssl certificate"
-	generate_certificate
-	chmod 600 "$cert_dir/cert.pem" "$cert_dir/key.pem" "$cert_dir/self_signed_cert.pem" "$cert_dir/self_signed_key.pem"
-	if [[ $(grep "nogroup" /etc/group) ]]; then
-		chown nobody:nogroup "$cert_dir/cert.pem" "$cert_dir/key.pem" "$cert_dir/self_signed_cert.pem" "$cert_dir/self_signed_key.pem"
-	else
-		chown nobody:nobody "$cert_dir/cert.pem" "$cert_dir/key.pem" "$cert_dir/self_signed_cert.pem" "$cert_dir/self_signed_key.pem"
-	fi
-	success "Successfully issued the ssl certificate"
-}
-
-generate_certificate() {
-	info "Generate a self-signed certificate"
-	openssl genrsa -des3 -passout pass:xxxx -out server.pass.key 2048
-	openssl rsa -passin pass:xxxx -in server.pass.key -out "$cert_dir/self_signed_key.pem"
-	rm -rf server.pass.key
-	openssl req -new -key "$cert_dir/self_signed_key.pem" -out server.csr -subj "/CN=$server_ip"
-	openssl x509 -req -days 3650 -in server.csr -signkey "$cert_dir/self_signed_key.pem" -out "$cert_dir/self_signed_cert.pem"
-	rm -rf server.csr
-	[[ ! -f "$cert_dir/self_signed_cert.pem" || ! -f "$cert_dir/self_signed_key.pem" ]] && error "Failed to generate a self-signed certificate"
-	success "Successfully generated a self-signed certificate"
-}
-
 xray_restart() {
 	systemctl restart xray
 	[[ ! $(ps aux | grep xray) ]] && error "Failed to restart xray"
@@ -419,68 +506,13 @@ xray_restart() {
 	sleep 2
 }
 
-install_nginx() {
-	[[ ! -f '/usr/local/lib/libjemalloc.so' ]] && install_jemalloc
-	info "Complie nginx $nginx_version"
-	wget -O openssl-${openssl_version}.tar.gz https://www.openssl.org/source/openssl-$openssl_version.tar.gz
-	wget -O nginx-${nginx_version}.tar.gz http://nginx.org/download/nginx-${nginx_version}.tar.gz
-	[[ -d nginx-"$nginx_version" ]] && rm -rf nginx-"$nginx_version"
-	tar -xzvf nginx-"$nginx_version".tar.gz
-	[[ -d openssl-"$openssl_version" ]] && rm -rf openssl-"$openssl_version"
-	tar -xzvf openssl-"$openssl_version".tar.gz
-	cd nginx-"$nginx_version"
-	echo '/usr/local/lib' >/etc/ld.so.conf.d/local.conf
-	ldconfig
-	./configure --prefix="${nginx_dir}" \
-		--with-http_ssl_module \
-		--with-http_gzip_static_module \
-		--with-http_stub_status_module \
-		--with-pcre \
-		--with-http_realip_module \
-		--with-http_flv_module \
-		--with-http_mp4_module \
-		--with-http_secure_link_module \
-		--with-http_v2_module \
-		--with-cc-opt='-O3' \
-		--with-ld-opt="-ljemalloc" \
-		--with-openssl=../openssl-"$openssl_version"
-	make -j$(nproc --all) && make install
-	cd ..
-	rm -rf openssl-${openssl_version}* nginx-${nginx_version}*
-	ln -s /etc/nginx/sbin/nginx /usr/bin/nginx
-	configure_nginx
-	nginx_systemd
-	systemctl stop nginx
-	systemctl start --now nginx
-	[[ ! $(type -P nginx) ]] &&
-	error "Failed to complie nginx $nginx_version"
-	success "Successfully complied nginx $nginx_version"
-}
-
-install_jemalloc(){
-	wget -O jemalloc-$jemalloc_version.tar.bz2 https://github.com/jemalloc/jemalloc/releases/download/$jemalloc_version/jemalloc-$jemalloc_version.tar.bz2
-	tar -xvf jemalloc-$jemalloc_version.tar.bz2
-	cd jemalloc-$jemalloc_version
-	info "Complie jamalloc $jemalloc_version"
-	./configure
-	make -j$(nproc --all) && make install
-	echo '/usr/local/lib' >/etc/ld.so.conf.d/local.conf
-	ldconfig
-	cd ..
-	rm -rf jemalloc-${jemalloc_version}*
-	[[ ! -f '/usr/local/lib/libjemalloc.so' ]] &&
-	error "Failed to complie jamalloc $jemalloc_version"
-	success "Successfully complied jamalloc $jemalloc_version"
-}
-
 configure_nginx() {
-	rm -rf /home/wwwroot/$xray_domain
-	mkdir -p /home/wwwroot/$xray_domain
+	rm -rf $website_dir/$xray_domain
+	mkdir -p $website_dir/$xray_domain
 	wget -O web.tar.gz https://github.com/jiuqi9997/xray-yes/raw/main/web.tar.gz
-	tar xzvf web.tar.gz -C /home/wwwroot/$xray_domain
+	tar xzvf web.tar.gz -C $website_dir/$xray_domain
 	rm -rf web.tar.gz
-	mkdir -p "$nginx_conf_dir/vhost"
-	cat > "$nginx_conf_dir/vhost/$xray_domain.conf" <<EOF
+	cat > $nginx_conf_dir/vhost/$xray_domain.conf <<EOF
 server
 {
 	listen 80;
@@ -513,7 +545,7 @@ server
 	listen [::]:$nport1 http2 proxy_protocol;
 	server_name $xray_domain;
 	index index.html index.htm index.php default.php default.htm default.html;
-	root /home/wwwroot/$xray_domain;
+	root $website_dir/$xray_domain;
 	add_header Strict-Transport-Security "max-age=31536000" always;
 
 	location ~ .*\.(gif|jpg|jpeg|png|bmp|swf)$
@@ -533,7 +565,7 @@ server
 	error_log  /dev/null;
 }
 EOF
-	cat > "$nginx_conf_dir/nginx.conf" << EOF
+	cat > $nginx_conf_dir/nginx.conf << EOF
 worker_processes auto;
 worker_rlimit_nofile 51200;
 
@@ -605,30 +637,11 @@ http
 		include $nginx_conf_dir/vhost/*.conf;
 }
 EOF
-}
-
-nginx_systemd() {
-	cat > "$nginx_systemd_file" <<EOF
-[Unit]
-Description=NGINX web server
-After=syslog.target network.target remote-fs.target nss-lookup.target
-[Service]
-Type=forking
-PIDFile=/etc/nginx/logs/nginx.pid
-ExecStartPre=/etc/nginx/sbin/nginx -t
-ExecStart=/etc/nginx/sbin/nginx -c ${nginx_dir}/conf/nginx.conf
-ExecReload=/etc/nginx/sbin/nginx -s reload
-ExecStop=/bin/kill -s QUIT \$MAINPID
-PrivateTmp=true
-[Install]
-WantedBy=multi-user.target
-EOF
-	systemctl daemon-reload
+	nginx -s reload
 }
 
 finish() {
 	success "Successfully installed VLESS+tcp+xtls+nginx"
-	[[ $ip_type -eq 3 ]] && server_ip="$server_ip / $server_ip6"
 	echo ""
 	echo ""
 	echo -e "$Red xray configuration $Font" | tee $info_file
@@ -685,7 +698,7 @@ mod_port() {
 	[[ $port -ne 443 ]] && configure_firewall $port
 	configure_firewall
 	sed -i "s/$port_old/$port/g" $xray_conf $info_file
-	[[ $(grep "$port" $xray_conf ) ]] && success "Successfully modified the port"
+	[[ $(grep $port $xray_conf ) ]] && success "Successfully modified the port"
 	sleep 2
 	xray_restart
 	menu
