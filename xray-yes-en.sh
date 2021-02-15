@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.1.30"
+script_version="1.1.31"
 nginx_dir="/usr/local/nginx"
 nginx_conf_dir="/usr/local/nginx/conf"
 nginx_systemd_file="/etc/systemd/system/nginx.service"
@@ -528,7 +528,6 @@ configure_xray() {
                 "fallbacks": [
                     {
                         "dest": $nport,
-                        "alpn": "http/1.1",
                         "xver": 1
                     },
                     {
