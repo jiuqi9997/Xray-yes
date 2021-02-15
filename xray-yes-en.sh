@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.1.25"
+script_version="1.1.26"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 nginx_systemd_file="/etc/systemd/system/nginx.service"
@@ -393,6 +393,78 @@ issue_certificate() {
 	fail=0
 	info "Issue a ssl certificate"
 	mkdir -p $nginx_conf_dir/vhost
+	cat > $nginx_conf_dir/nginx.conf << EOF
+worker_processes auto;
+worker_rlimit_nofile 51200;
+
+events
+	{
+		use epoll;
+		worker_connections 51200;
+		multi_accept on;
+	}
+
+http
+	{
+		include	   mime.types;
+		default_type  application/octet-stream;
+		log_format main
+			'\$http_cf_connecting_ip \$http_cf_connecting_ipv6 \$http_cf_ipcountry '
+			'\$status \$remote_addr [\$time_local] '
+			'"\$request" "\$http_referer" '
+			'"\$http_user_agent" \$body_bytes_sent B';
+		charset utf-8;
+		server_names_hash_bucket_size 512;
+		client_header_buffer_size 32k;
+		large_client_header_buffers 4 32k;
+		client_max_body_size 50m;
+
+		sendfile   on;
+		tcp_nopush on;
+
+		keepalive_timeout 60;
+
+		tcp_nodelay on;
+
+		fastcgi_connect_timeout 300;
+		fastcgi_send_timeout 300;
+		fastcgi_read_timeout 300;
+		fastcgi_buffer_size 64k;
+		fastcgi_buffers 4 64k;
+		fastcgi_busy_buffers_size 128k;
+		fastcgi_temp_file_write_size 256k;
+		fastcgi_intercept_errors on;
+
+		gzip on;
+		gzip_min_length  1k;
+		gzip_buffers	 4 16k;
+		gzip_http_version 1.1;
+		gzip_comp_level 2;
+		gzip_types	 text/plain application/javascript application/x-javascript text/javascript text/css application/xml;
+		gzip_vary on;
+		gzip_proxied   expired no-cache no-store private auth;
+		gzip_disable   "MSIE [1-6]\.";
+
+		limit_conn_zone \$binary_remote_addr zone=perip:10m;
+		limit_conn_zone \$server_name zone=perserver:10m;
+
+		server_tokens off;
+		access_log off;
+
+		server
+		{
+			listen 80 default_server;
+			listen [::]:80 default_server;
+
+			return 444;
+
+			access_log /dev/null;
+			error_log /dev/null;
+		}
+
+		include $nginx_conf_dir/vhost/*.conf;
+}
+EOF
 	cat > $nginx_conf_dir/vhost/$xray_domain.conf <<EOF
 server
 {
@@ -565,78 +637,6 @@ server
 	error_log  /dev/null;
 }
 EOF
-	cat > $nginx_conf_dir/nginx.conf << EOF
-worker_processes auto;
-worker_rlimit_nofile 51200;
-
-events
-	{
-		use epoll;
-		worker_connections 51200;
-		multi_accept on;
-	}
-
-http
-	{
-		include	   mime.types;
-		default_type  application/octet-stream;
-		log_format main
-			'\$http_cf_connecting_ip \$http_cf_connecting_ipv6 \$http_cf_ipcountry '
-			'\$status \$remote_addr [\$time_local] '
-			'"\$request" "\$http_referer" '
-			'"\$http_user_agent" \$body_bytes_sent B';
-		charset utf-8;
-		server_names_hash_bucket_size 512;
-		client_header_buffer_size 32k;
-		large_client_header_buffers 4 32k;
-		client_max_body_size 50m;
-
-		sendfile   on;
-		tcp_nopush on;
-
-		keepalive_timeout 60;
-
-		tcp_nodelay on;
-
-		fastcgi_connect_timeout 300;
-		fastcgi_send_timeout 300;
-		fastcgi_read_timeout 300;
-		fastcgi_buffer_size 64k;
-		fastcgi_buffers 4 64k;
-		fastcgi_busy_buffers_size 128k;
-		fastcgi_temp_file_write_size 256k;
-		fastcgi_intercept_errors on;
-
-		gzip on;
-		gzip_min_length  1k;
-		gzip_buffers	 4 16k;
-		gzip_http_version 1.1;
-		gzip_comp_level 2;
-		gzip_types	 text/plain application/javascript application/x-javascript text/javascript text/css application/xml;
-		gzip_vary on;
-		gzip_proxied   expired no-cache no-store private auth;
-		gzip_disable   "MSIE [1-6]\.";
-
-		limit_conn_zone \$binary_remote_addr zone=perip:10m;
-		limit_conn_zone \$server_name zone=perserver:10m;
-
-		server_tokens off;
-		access_log off;
-
-		server
-		{
-			listen 80 default_server;
-			listen [::]:80 default_server;
-
-			return 444;
-
-			access_log /dev/null;
-			error_log /dev/null;
-		}
-
-		include $nginx_conf_dir/vhost/*.conf;
-}
-EOF
 	nginx -s reload
 }
 
@@ -646,11 +646,11 @@ finish() {
 	echo ""
 	echo -e "$Red xray configuration $Font" | tee $info_file
 	echo -e "$Red Address: $Font $server_ip " | tee -a $info_file
-	echo -e "$Red Port：$Font $port " | tee -a $info_file
+	echo -e "$Red Port: $Font $port " | tee -a $info_file
 	echo -e "$Red UUID/Passwd: $Font $uuid" | tee -a $info_file
-	echo -e "$Red Flow：$Font $xray_flow" | tee -a $info_file
-	echo -e "$Red Host：$Font $xray_domain" | tee -a $info_file
-	echo -e "$Red TLS：$Font ${RedBG}XTLS${Font}" | tee -a $info_file
+	echo -e "$Red Flow: $Font $xray_flow" | tee -a $info_file
+	echo -e "$Red Host: $Font $xray_domain" | tee -a $info_file
+	echo -e "$Red TLS: $Font ${RedBG}XTLS${Font}" | tee -a $info_file
 	echo ""
 	echo -e "$Red Share link: $Font vless://$uuid@$xray_domain:$port?flow=xtls-rprx-direct&security=xtls#$server_ip" | tee -a $info_file
 	echo ""
