@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.1.22"
+script_version="1.1.23"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 nginx_systemd_file="/etc/systemd/system/nginx.service"
@@ -639,7 +639,7 @@ finish() {
 	echo -e "$Red 伪装域名（host）：$Font $xray_domain" | tee -a $info_file
 	echo -e "$Red 底层传输安全（tls）：$Font ${RedBG}XTLS${Font}" | tee -a $info_file
 	echo ""
-	echo -e "$Red 分享链接：$Font vless://$uuid@$xray_domain:$port?flow=xtls-rprx-direct&encryption=none&security=xtls&type=tcp&headerType=none#$server_ip" | tee -a $info_file
+	echo -e "$Red 分享链接：$Font vless://$uuid@$xray_domain:$port?flow=xtls-rprx-direct&security=xtls#$server_ip" | tee -a $info_file
 	echo ""
 	echo -e "${GreenBG} 提示：${Font}您可以在 Linux 平台上使用流控 ${RedBG}xtls-rprx-splice${Font} 以获得更好的性能。"
 }

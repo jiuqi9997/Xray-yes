@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.1.22"
+script_version="1.1.23"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf"
 nginx_systemd_file="/etc/systemd/system/nginx.service"
@@ -639,7 +639,7 @@ finish() {
 	echo -e "$Red Host：$Font $xray_domain" | tee -a $info_file
 	echo -e "$Red TLS：$Font ${RedBG}XTLS${Font}" | tee -a $info_file
 	echo ""
-	echo -e "$Red Share link: $Font vless://$uuid@$xray_domain:$port?flow=xtls-rprx-direct&encryption=none&security=xtls&type=tcp&headerType=none#$server_ip" | tee -a $info_file
+	echo -e "$Red Share link: $Font vless://$uuid@$xray_domain:$port?flow=xtls-rprx-direct&security=xtls#$server_ip" | tee -a $info_file
 	echo ""
 	echo -e "${GreenBG} Tip: ${Font}You can use flow control ${RedBG}xtls-rprx-splice${Font} on the Linux platform to get better performance."
 }
