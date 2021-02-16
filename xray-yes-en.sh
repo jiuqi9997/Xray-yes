@@ -8,13 +8,13 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.1.32"
+script_version="1.1.33"
 nginx_dir="/usr/local/nginx"
 nginx_conf_dir="/usr/local/nginx/conf"
 nginx_systemd_file="/etc/systemd/system/nginx.service"
 website_dir="/home/wwwroot"
 nginx_version="1.18.0"
-openssl_version="1.1.1g"
+openssl_version="1.1.1i"
 jemalloc_version="5.2.1"
 xray_dir="/usr/local/etc/xray"
 xray_log_dir="/var/log/xray"
@@ -408,11 +408,6 @@ http
 	{
 		include	   mime.types;
 		default_type  application/octet-stream;
-		log_format main
-			'\$http_cf_connecting_ip \$http_cf_connecting_ipv6 \$http_cf_ipcountry '
-			'\$status \$remote_addr [\$time_local] '
-			'"\$request" "\$http_referer" '
-			'"\$http_user_agent" \$body_bytes_sent B';
 		charset utf-8;
 		server_names_hash_bucket_size 512;
 		client_header_buffer_size 32k;
