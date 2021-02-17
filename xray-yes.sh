@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.1.35"
+script_version="1.1.36"
 nginx_dir="/usr/local/nginx"
 nginx_conf_dir="/usr/local/nginx/conf"
 nginx_systemd_file="/etc/systemd/system/nginx.service"
@@ -82,8 +82,9 @@ install_all() {
 	install_acme
 	install_xray
 	install_nginx
-	configure_xray
 	issue_certificate
+	configure_xray
+	xray_restart
 	configure_nginx
 	finish
 	exit 0
@@ -471,7 +472,7 @@ server
 }
 EOF
 	nginx -s reload
-	/root/.acme.sh/acme.sh --issue -d $xray_domain --keylength ec-256 --fullchain-file $cert_dir/cert.pem --key-file $cert_dir/key.pem --webroot $website_dir/$xray_domain --reloadcmd "systemctl restart xray" --force || fail=1
+	/root/.acme.sh/acme.sh --issue -d $xray_domain --keylength ec-256 --fullchain-file $cert_dir/cert.pem --key-file $cert_dir/key.pem --webroot $website_dir/$xray_domain --renew-hook "systemctl restart xray" --force || fail=1
 	[[ $fail -eq 1 ]] && error "证书申请失败"
 	generate_certificate
 	chmod 600 $cert_dir/cert.pem $cert_dir/key.pem $cert_dir/self_signed_cert.pem $cert_dir/self_signed_key.pem
