@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.1.34"
+script_version="1.1.35"
 nginx_dir="/usr/local/nginx"
 nginx_conf_dir="/usr/local/nginx/conf"
 nginx_systemd_file="/etc/systemd/system/nginx.service"
@@ -63,8 +63,8 @@ panic() {
 
 update_script() {
 	fail=0
-	ol_ver=$(curl -sL github.com/jiuqi9997/Xray-yes/raw/main/xray-yes.sh | grep "script_version=" | head -1 | awk -F '=|"' '{print $3}' | sed 's/\.//g')
-	if [[ $(expr $ol_ver / 1) && $ol_ver > $(echo $script_version | sed 's/\.//g') ]]; then
+	ol_version=$(curl -sL github.com/jiuqi9997/Xray-yes/raw/main/xray-yes.sh | grep "script_version=" | head -1 | awk -F '=|"' '{print $3}')
+	if [[ $(echo -e "$ol_version\n$script_version" | sort -rV | head -n 1) == $ol_version ]]; then
 		wget -O xray-yes.sh github.com/jiuqi9997/Xray-yes/raw/main/xray-yes.sh || fail=1
 		[[ $fail -eq 1 ]] && warning "更新失败" && sleep 2 && return 0
 		success "更新成功"
@@ -82,9 +82,8 @@ install_all() {
 	install_acme
 	install_xray
 	install_nginx
-	issue_certificate
 	configure_xray
-	xray_restart
+	issue_certificate
 	configure_nginx
 	finish
 	exit 0
@@ -472,7 +471,7 @@ server
 }
 EOF
 	nginx -s reload
-	/root/.acme.sh/acme.sh --issue -d $xray_domain --keylength ec-256 --fullchain-file $cert_dir/cert.pem --key-file $cert_dir/key.pem --webroot $website_dir/$xray_domain --renew-hook "systemctl restart xray" --force || fail=1
+	/root/.acme.sh/acme.sh --issue -d $xray_domain --keylength ec-256 --fullchain-file $cert_dir/cert.pem --key-file $cert_dir/key.pem --webroot $website_dir/$xray_domain --reloadcmd "systemctl restart xray" --force || fail=1
 	[[ $fail -eq 1 ]] && error "证书申请失败"
 	generate_certificate
 	chmod 600 $cert_dir/cert.pem $cert_dir/key.pem $cert_dir/self_signed_cert.pem $cert_dir/self_signed_key.pem
