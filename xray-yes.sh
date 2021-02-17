@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.1.36"
+script_version="1.1.37"
 nginx_dir="/usr/local/nginx"
 nginx_conf_dir="/usr/local/nginx/conf"
 nginx_systemd_file="/etc/systemd/system/nginx.service"
@@ -64,7 +64,7 @@ panic() {
 update_script() {
 	fail=0
 	ol_version=$(curl -sL github.com/jiuqi9997/Xray-yes/raw/main/xray-yes.sh | grep "script_version=" | head -1 | awk -F '=|"' '{print $3}')
-	if [[ $(echo -e "$ol_version\n$script_version" | sort -rV | head -n 1) == $ol_version ]]; then
+	if [[ $(echo -e "$ol_version\n$script_version" | sort -rV | head -n 1) == $ol_version && $ol_version != $script_version ]]; then
 		wget -O xray-yes.sh github.com/jiuqi9997/Xray-yes/raw/main/xray-yes.sh || fail=1
 		[[ $fail -eq 1 ]] && warning "更新失败" && sleep 2 && return 0
 		success "更新成功"
