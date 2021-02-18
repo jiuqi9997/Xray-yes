@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.1.46"
+script_version="1.1.47"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf.d"
 website_dir="/home/wwwroot"
@@ -302,6 +302,38 @@ EOF
 		$INS wget curl epel-release
 		$INS $rpm_packages
 	fi
+	mkdir -p $nginx_dir
+	cat > $nginx_dir/nginx.conf <<EOF
+worker_processes  auto;
+
+error_log  /var/log/nginx/error.log warn;
+pid        /var/run/nginx.pid;
+
+
+events {
+    worker_connections  1024;
+}
+
+
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+
+    access_log  /var/log/nginx/access.log  main;
+
+    sendfile        on;
+    tcp_nopush     on;
+
+    keepalive_timeout  65;
+
+    gzip  on;
+
+    include /etc/nginx/conf.d/*.conf;
+}
+EOF
 	systemctl enable nginx
 	systemctl start nginx
 	success "Completed the installaion of the packages"
