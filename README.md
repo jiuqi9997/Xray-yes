@@ -30,7 +30,7 @@ bash -c "$(curl -L git.io/xray-yes)" - remove
 ```
 
 ## 功能
-全自动编译nginx、配置静态页面、申请证书、安装 Xray
+全自动安装nginx、配置静态页面、申请证书、安装 Xray
 
 <br />
 
@@ -68,7 +68,7 @@ bash -c "$(curl -L git.io/xray-yes-en)" - remove
 ```
 
 ## Functions
-Automatically compile nginx, configure static pages, issue certificates and install xray
+Automatically install nginx, configure static pages, issue certificates and install xray
 
 <br />
 

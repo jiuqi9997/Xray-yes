@@ -8,14 +8,10 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.1.37"
-nginx_dir="/usr/local/nginx"
-nginx_conf_dir="/usr/local/nginx/conf"
-nginx_systemd_file="/etc/systemd/system/nginx.service"
+script_version="1.1.40"
+nginx_dir="/etc/nginx"
+nginx_conf_dir="/etc/nginx/conf.d"
 website_dir="/home/wwwroot"
-nginx_version="1.18.0"
-openssl_version="1.1.1i"
-jemalloc_version="5.2.1"
 xray_dir="/usr/local/etc/xray"
 xray_log_dir="/var/log/xray"
 xray_access_log="$xray_log_dir/access.log"
@@ -81,7 +77,6 @@ install_all() {
 	install_packages
 	install_acme
 	install_xray
-	install_nginx
 	issue_certificate
 	configure_xray
 	xray_restart
@@ -223,9 +218,6 @@ get_info() {
 	elif [[ $ID == "debian" || $ID == "ubuntu" ]]; then
 		PM="apt-get"
 		INS="apt-get install -y"
-	elif [[ $ID == "arch" ]]; then
-		PM="pacman"
-		INS="pacman -Syu --noconfirm"
 	else
 		error "The operating system is not supported"
 	fi
@@ -284,16 +276,28 @@ check_env() {
 
 install_packages() {
 	info "Install the software packages"
-	$PM update -y
-	$PM upgrade -y
-	$PM install -y wget curl
-	rpm_packages="libcurl-devel tar gcc make zip unzip openssl openssl-devel libxml2 libxml2-devel libxslt* zlib zlib-devel libjpeg-devel libpng-devel libwebp libwebp-devel freetype freetype-devel lsof pcre pcre-devel crontabs icu libicu-devel c-ares libffi-devel bzip2 bzip2-devel ncurses-devel sqlite-devel readline-devel tk-devel gdbm-devel xz-devel libtermcap-devel libevent-devel libuuid-devel git jq socat"
-	apt_packages="libcurl4-openssl-dev gcc make zip unzip openssl libssl-dev libxml2 libxml2-dev zlib1g zlib1g-dev libjpeg-dev libpng-dev lsof libpcre3 libpcre3-dev cron net-tools swig build-essential libffi-dev libbz2-dev libncurses-dev libsqlite3-dev libreadline-dev tk-dev libgdbm-dev libdb-dev libdb++-dev libpcap-dev xz-utils git libgd3 libgd-dev libevent-dev libncurses5-dev uuid-dev jq bzip2 socat"
+	rpm_packages="libcurl-devel tar zip unzip openssl openssl-devel lsof git jq socat nginx"
+	apt_packages="libcurl4-openssl-dev zip unzip openssl libssl-dev lsof git jq socat nginx"
 	if [[ $PM == "apt-get" ]]; then
+		$PM update
+		$PM upgrade -y
+		$INS wget curl gnupg2 ca-certificates lsb-release
+		echo "deb http://nginx.org/packages/$ID `lsb_release -cs` nginx" | tee /etc/apt/sources.list.d/nginx.list
+		curl -fsSL https://nginx.org/keys/nginx_signing.key | apt-key add -
 		$INS $apt_packages
 	elif [[ $PM == "yum" || $PM == "dnf" ]]; then
 		sed -i 's/SELINUX=enforcing/SELINUX=disabled/' /etc/selinux/config
-		$INS epel-release
+		cat > /etc/yum.repos.d/nginx.repo <<EOF
+[nginx-stable]
+name=nginx stable repo
+baseurl=http://nginx.org/packages/centos/$releasever/$basearch/
+gpgcheck=1
+enabled=1
+gpgkey=https://nginx.org/keys/nginx_signing.key
+module_hotfixes=true
+EOF
+		$PM update -y
+		$INS wget curl epel-release
 		$INS $rpm_packages
 	fi
 	success "Completed the installaion of the packages"
@@ -315,84 +319,11 @@ install_xray() {
 	success "Successfully installed Xray"
 }
 
-install_nginx() {
-	[[ ! -f /usr/local/lib/libjemalloc.so ]] && install_jemalloc
-	info "Complie nginx $nginx_version"
-	wget -O openssl-${openssl_version}.tar.gz https://www.openssl.org/source/openssl-$openssl_version.tar.gz
-	wget -O nginx-${nginx_version}.tar.gz http://nginx.org/download/nginx-${nginx_version}.tar.gz
-	[[ -d nginx-$nginx_version ]] && rm -rf nginx-$nginx_version
-	tar -xzvf nginx-$nginx_version.tar.gz
-	[[ -d openssl-$openssl_version ]] && rm -rf openssl-$openssl_version
-	tar -xzvf openssl-$openssl_version.tar.gz
-	cd nginx-$nginx_version
-	echo '/usr/local/lib' >/etc/ld.so.conf.d/local.conf
-	ldconfig
-	./configure --prefix=${nginx_dir} \
-		--with-http_ssl_module \
-		--with-http_gzip_static_module \
-		--with-http_stub_status_module \
-		--with-pcre \
-		--with-http_realip_module \
-		--with-http_flv_module \
-		--with-http_mp4_module \
-		--with-http_secure_link_module \
-		--with-http_v2_module \
-		--with-cc-opt="-O3" \
-		--with-ld-opt="-ljemalloc" \
-		--with-openssl=../openssl-$openssl_version
-	make -j$(nproc --all) && make install
-	cd ..
-	rm -rf openssl-${openssl_version}* nginx-${nginx_version}*
-	ln -s $nginx_dir/sbin/nginx /usr/bin/nginx
-	nginx_systemd
-	systemctl enable nginx
-	systemctl stop nginx
-	systemctl start nginx
-	[[ ! $(type -P nginx) ]] &&
-	error "Failed to complie nginx $nginx_version"
-	success "Successfully complied nginx $nginx_version"
-}
-
-install_jemalloc(){
-	wget -O jemalloc-$jemalloc_version.tar.bz2 https://github.com/jemalloc/jemalloc/releases/download/$jemalloc_version/jemalloc-$jemalloc_version.tar.bz2
-	tar -xvf jemalloc-$jemalloc_version.tar.bz2
-	cd jemalloc-$jemalloc_version
-	info "Complie jamalloc $jemalloc_version"
-	./configure
-	make -j$(nproc --all) && make install
-	echo '/usr/local/lib' >/etc/ld.so.conf.d/local.conf
-	ldconfig
-	cd ..
-	rm -rf jemalloc-${jemalloc_version}*
-	[[ ! -f /usr/local/lib/libjemalloc.so ]] &&
-	error "Failed to complie jamalloc $jemalloc_version"
-	success "Successfully complied jamalloc $jemalloc_version"
-}
-
-nginx_systemd() {
-	cat > $nginx_systemd_file <<EOF
-[Unit]
-Description=NGINX web server
-After=syslog.target network.target remote-fs.target nss-lookup.target
-[Service]
-Type=forking
-PIDFile=$nginx_dir/logs/nginx.pid
-ExecStartPre=$nginx_dir/sbin/nginx -t
-ExecStart=$nginx_dir/sbin/nginx -c ${nginx_dir}/conf/nginx.conf
-ExecReload=$nginx_dir/sbin/nginx -s reload
-ExecStop=/bin/kill -s QUIT \$MAINPID
-PrivateTmp=true
-[Install]
-WantedBy=multi-user.target
-EOF
-	systemctl daemon-reload
-}
-
 issue_certificate() {
 	fail=0
 	info "Issue a ssl certificate"
-	mkdir -p $nginx_conf_dir/vhost
-	cat > $nginx_conf_dir/nginx.conf << EOF
+	mkdir -p $nginx_conf_dir
+	cat > $nginx_dir/nginx.conf << EOF
 worker_processes auto;
 worker_rlimit_nofile 51200;
 
@@ -456,10 +387,10 @@ http
 			error_log /dev/null;
 		}
 
-		include $nginx_conf_dir/vhost/*.conf;
+		include $nginx_conf_dir/*.conf;
 }
 EOF
-	cat > $nginx_conf_dir/vhost/$xray_domain.conf <<EOF
+	cat > $nginx_conf_dir/$xray_domain.conf <<EOF
 server
 {
 	listen 80;
@@ -481,7 +412,6 @@ EOF
 	else
 		chown nobody:nobody $cert_dir/cert.pem $cert_dir/key.pem $cert_dir/self_signed_cert.pem $cert_dir/self_signed_key.pem
 	fi
-	rm -rf $nginx_conf_dir/vhost/$xray_domain.conf
 	success "Successfully issued the ssl certificate"
 }
 
@@ -578,7 +508,7 @@ configure_nginx() {
 	wget -O web.tar.gz https://github.com/jiuqi9997/Xray-yes/raw/main/web.tar.gz
 	tar xzvf web.tar.gz -C $website_dir/$xray_domain
 	rm -rf web.tar.gz
-	cat > $nginx_conf_dir/vhost/$xray_domain.conf <<EOF
+	cat > $nginx_conf_dir/$xray_domain.conf <<EOF
 server
 {
 	listen 80;
@@ -658,10 +588,10 @@ update_xray() {
 }
 
 uninstall_all() {
+	get_info
 	curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s -- remove --purge
 	systemctl stop nginx
-	rm -rf /usr/bin/nginx
-	rm -rf $nginx_systemd_file
+	$PM remove -y nginx
 	rm -rf $nginx_dir
 	rm -rf $website_dir
 	rm -rf $info_file
