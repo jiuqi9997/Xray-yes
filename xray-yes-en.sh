@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.1.41"
+script_version="1.1.42"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf.d"
 website_dir="/home/wwwroot"
@@ -301,6 +301,7 @@ EOF
 		$INS wget curl epel-release
 		$INS $rpm_packages
 	fi
+	systemctl start nginx
 	success "Completed the installaion of the packages"
 }
 
@@ -324,71 +325,16 @@ issue_certificate() {
 	fail=0
 	info "Issue a ssl certificate"
 	mkdir -p $nginx_conf_dir
-	cat > $nginx_dir/nginx.conf << EOF
-worker_processes auto;
-worker_rlimit_nofile 51200;
+	cat > $nginx_conf_dir/default.conf << EOF
+server
+{
+	listen 80 default_server;
+	listen [::]:80 default_server;
 
-events
-	{
-		use epoll;
-		worker_connections 51200;
-		multi_accept on;
-	}
+	return 444;
 
-http
-	{
-		include	   mime.types;
-		default_type  application/octet-stream;
-		charset utf-8;
-		server_names_hash_bucket_size 512;
-		client_header_buffer_size 32k;
-		large_client_header_buffers 4 32k;
-		client_max_body_size 50m;
-
-		sendfile   on;
-		tcp_nopush on;
-
-		keepalive_timeout 60;
-
-		tcp_nodelay on;
-
-		fastcgi_connect_timeout 300;
-		fastcgi_send_timeout 300;
-		fastcgi_read_timeout 300;
-		fastcgi_buffer_size 64k;
-		fastcgi_buffers 4 64k;
-		fastcgi_busy_buffers_size 128k;
-		fastcgi_temp_file_write_size 256k;
-		fastcgi_intercept_errors on;
-
-		gzip on;
-		gzip_min_length  1k;
-		gzip_buffers	 4 16k;
-		gzip_http_version 1.1;
-		gzip_comp_level 2;
-		gzip_types	 text/plain application/javascript application/x-javascript text/javascript text/css application/xml;
-		gzip_vary on;
-		gzip_proxied   expired no-cache no-store private auth;
-		gzip_disable   "MSIE [1-6]\.";
-
-		limit_conn_zone \$binary_remote_addr zone=perip:10m;
-		limit_conn_zone \$server_name zone=perserver:10m;
-
-		server_tokens off;
-		access_log off;
-
-		server
-		{
-			listen 80 default_server;
-			listen [::]:80 default_server;
-
-			return 444;
-
-			access_log /dev/null;
-			error_log /dev/null;
-		}
-
-		include $nginx_conf_dir/*.conf;
+	access_log /dev/null;
+	error_log /dev/null;
 }
 EOF
 	cat > $nginx_conf_dir/$xray_domain.conf <<EOF
@@ -541,23 +487,10 @@ server
 	listen $nport1 http2 proxy_protocol;
 	listen [::]:$nport1 http2 proxy_protocol;
 	server_name $xray_domain;
-	index index.html index.htm index.php default.php default.htm default.html;
+	index index.html;
 	root $website_dir/$xray_domain;
 	add_header Strict-Transport-Security "max-age=31536000" always;
 
-	location ~ .*\.(gif|jpg|jpeg|png|bmp|swf)$
-	{
-		expires	  30d;
-		error_log off;
-		access_log /dev/null;
-	}
-
-	location ~ .*\.(js|css)?$
-	{
-		expires	  12h;
-		error_log off;
-		access_log /dev/null;
-	}
 	access_log  /dev/null;
 	error_log  /dev/null;
 }
