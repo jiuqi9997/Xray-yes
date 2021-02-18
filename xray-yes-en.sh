@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.1.44"
+script_version="1.1.45"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf.d"
 website_dir="/home/wwwroot"
@@ -284,6 +284,7 @@ install_packages() {
 		$INS wget curl gnupg2 ca-certificates lsb-release
 		echo "deb http://nginx.org/packages/$ID `lsb_release -cs` nginx" | tee /etc/apt/sources.list.d/nginx.list
 		curl -fsSL https://nginx.org/keys/nginx_signing.key | apt-key add -
+		$PM update
 		$INS $apt_packages
 	elif [[ $PM == "yum" || $PM == "dnf" ]]; then
 		sed -i 's/SELINUX=enforcing/SELINUX=disabled/' /etc/selinux/config
