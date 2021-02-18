@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.1.45"
+script_version="1.1.46"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf.d"
 website_dir="/home/wwwroot"
@@ -302,6 +302,7 @@ EOF
 		$INS wget curl epel-release
 		$INS $rpm_packages
 	fi
+	systemctl enable nginx
 	systemctl start nginx
 	success "软件包安装完成"
 }
@@ -326,6 +327,8 @@ issue_certificate() {
 	info "申请 SSL 证书"
 	fail=0
 	mkdir -p $nginx_conf_dir
+	mkdir -p $website_dir/$xray_domain
+	touch $website_dir/$xray_domain/index.html
 	cat > $nginx_conf_dir/default.conf << EOF
 server
 {
