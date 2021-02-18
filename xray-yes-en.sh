@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.1.47"
+script_version="1.1.48"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf.d"
 website_dir="/home/wwwroot"
@@ -560,7 +560,11 @@ uninstall_all() {
 	get_info
 	curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s -- remove --purge
 	systemctl stop nginx
-	$PM remove -y nginx
+	if [[ $ID == "debian" || $ID == "ubuntu" ]]; then
+		$PM purge -y nginx
+	else
+		$PM remove -y nginx
+	fi
 	rm -rf $nginx_dir
 	rm -rf $website_dir
 	rm -rf $info_file
