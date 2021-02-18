@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.1.48"
+script_version="1.1.49"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf.d"
 website_dir="/home/wwwroot"
@@ -280,7 +280,6 @@ install_packages() {
 	apt_packages="libcurl4-openssl-dev zip unzip openssl libssl-dev lsof git jq socat nginx"
 	if [[ $PM == "apt-get" ]]; then
 		$PM update
-		$PM upgrade -y
 		$INS wget curl gnupg2 ca-certificates lsb-release
 		echo "deb http://nginx.org/packages/$ID `lsb_release -cs` nginx" | tee /etc/apt/sources.list.d/nginx.list
 		curl -fsSL https://nginx.org/keys/nginx_signing.key | apt-key add -
@@ -288,6 +287,7 @@ install_packages() {
 		$INS $apt_packages
 	elif [[ $PM == "yum" || $PM == "dnf" ]]; then
 		sed -i 's/SELINUX=enforcing/SELINUX=disabled/' /etc/selinux/config
+		setenforce 0
 		cat > /etc/yum.repos.d/nginx.repo <<EOF
 [nginx-stable]
 name=nginx stable repo
@@ -297,8 +297,6 @@ enabled=1
 gpgkey=https://nginx.org/keys/nginx_signing.key
 module_hotfixes=true
 EOF
-		$PM remove -y epel-release
-		$PM update -y
 		$INS wget curl epel-release
 		$INS $rpm_packages
 	fi
