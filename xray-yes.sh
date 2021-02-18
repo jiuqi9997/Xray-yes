@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.1.40"
+script_version="1.1.41"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf.d"
 website_dir="/home/wwwroot"
@@ -290,12 +290,13 @@ install_packages() {
 		cat > /etc/yum.repos.d/nginx.repo <<EOF
 [nginx-stable]
 name=nginx stable repo
-baseurl=http://nginx.org/packages/centos/$releasever/$basearch/
+baseurl=http://nginx.org/packages/centos/\$releasever/\$basearch/
 gpgcheck=1
 enabled=1
 gpgkey=https://nginx.org/keys/nginx_signing.key
 module_hotfixes=true
 EOF
+		$PM remove -y epel-release
 		$PM update -y
 		$INS wget curl epel-release
 		$INS $rpm_packages
