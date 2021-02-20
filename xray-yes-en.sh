@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.1.51"
+script_version="1.1.52"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf.d"
 website_dir="/home/wwwroot"
@@ -170,7 +170,7 @@ prepare_installation() {
 				;;
 			esac
 		fi
-		domain_ip6=$(ping -6 "$“”“xray_dom"ain -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
+		domain_ip6=$(ping -6 "$xray_domain" -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
 		server_ip6=$(curl https://api64.ipify.org -6 || fail=1)
 		[[ $fail -eq 1 ]] && error "Failed to get the local IP address (IPv6)"
 		[[ "$server_ip" == "$domain_ip" ]] && success "The domain name has been resolved to the local IP address (IPv6)" && success=1
@@ -361,7 +361,7 @@ issue_certificate() {
 	info "Issue a ssl certificate"
 	mkdir -p $nginx_conf_dir
 	mkdir -p "$website_dir/$xray_domain"
-	touch "”$website_dir/$xray_domain/index.html"
+	touch "$website_dir/$xray_domain/index.html"
 	cat > "$nginx_conf_dir/default.conf" << EOF
 server
 {
@@ -576,8 +576,8 @@ uninstall_all() {
 mod_uuid() {
 	fail=0
 	uuid_old=$(jq '.inbounds[].settings.clients[].id' $xray_conf || fail=1)
-	[[ $(echo $uuid_old | jq '' | wc -l) -gt 1 ]] && error "There are multiple UUIDs, please modify by yourself"
-	uuid_old=$(echo $uuid_old | sed 's/\"//g')
+	[[ $(echo "$uuid_old" | jq '' | wc -l) -gt 1 ]] && error "There are multiple UUIDs, please modify by yourself"
+	uuid_old=$(echo "$uuid_old" | sed 's/\"//g')
 	read -rp "Please enter the password for Xray (default UUID): " uuid
 	[[ -z $uuid ]] && uuid=$(xray uuid)
 	sed -i "s/$uuid_old/$uuid/g" $xray_conf $info_file
@@ -590,7 +590,7 @@ mod_uuid() {
 mod_port() {
 	fail=0
 	port_old=$(jq '.inbounds[].port' $xray_conf || fail=1)
-	[[ $(echo $port_old | jq '' | wc -l) -gt 1 ]] && error "There are multiple ports, please modify by yourself"
+	[[ $(echo "$port_old" | jq '' | wc -l) -gt 1 ]] && error "There are multiple ports, please modify by yourself"
 	read -rp "Please enter the port for Xray (default 443): " port
 	[[ -z $port ]] && port=443
 	[[ $port -gt 65535 ]] && echo "Please enter a correct port" && mod_port
@@ -696,7 +696,7 @@ main() {
 	clear
 	check_root
 	color
-	update_script $@
+	update_script "$*"
 	case $1 in
 	install)
 		install_all
@@ -719,4 +719,4 @@ main() {
 	esac
 }
 
-main $@
+main "$*"

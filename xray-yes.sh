@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.1.51"
+script_version="1.1.52"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf.d"
 website_dir="/home/wwwroot"
@@ -267,9 +267,9 @@ check_env() {
 	if ss -tnlp | grep -q ":80 "; then
 		error "80 端口被占用（需用于申请证书）"
 	fi
-	if [[ $port -eq "443" ]] && ss -tnlp | grep ":443 "; then
+	if [[ $port -eq "443" ]] && ss -tnlp | grep -q ":443 "; then
 		error "443 端口被占用"
-	elif ss -tnlp | grep ":$port "; then
+	elif ss -tnlp | grep -q ":$port "; then
 		error "$port 端口被占用"
 	fi
 }
@@ -320,7 +320,7 @@ http {
     default_type  application/octet-stream;
 
     log_format  main  '\$remote_addr - \$remote_user [\$time_local] "\$request" '
-		      '\$status \$body_bytes_sent "\$http_referer" '
+                      '\$status \$body_bytes_sent "\$http_referer" '
                       '"\$http_user_agent" "\$http_x_forwarded_for"';
 
     access_log  /var/log/nginx/access.log  main;
@@ -379,8 +379,8 @@ server
 {
 	listen 80;
 	listen [::]:80;
-	server_name "$xray_domain";
-	root "$website_dir/$xray_domain";
+	server_name $xray_domain;
+	root $website_dir/$xray_domain;
 
 	access_log /dev/null;
 	error_log /dev/null;
@@ -576,8 +576,8 @@ uninstall_all() {
 mod_uuid() {
 	fail=0
 	uuid_old=$(jq '.inbounds[].settings.clients[].id' $xray_conf || fail=1)
-	[[ $(echo $uuid_old | jq '' | wc -l) -gt 1 ]] && error "有多个 UUID，请自行修改"
-	uuid_old=$(echo $uuid_old | sed 's/\"//g')
+	[[ $(echo "$uuid_old" | jq '' | wc -l) -gt 1 ]] && error "有多个 UUID，请自行修改"
+	uuid_old=$(echo "$uuid_old" | sed 's/\"//g')
 	read -rp "请输入 Xray 密码（默认使用 UUID）：" uuid
 	[[ -z $uuid ]] && uuid=$(xray uuid)
 	sed -i "s/$uuid_old/$uuid/g" $xray_conf $info_file
@@ -590,7 +590,7 @@ mod_uuid() {
 mod_port() {
 	fail=0
 	port_old=$(jq '.inbounds[].port' $xray_conf || fail=1)
-	[[ $(echo $port_old | jq '' | wc -l) -gt 1 ]] && error "有多个端口，请自行修改"
+	[[ $(echo "$port_old" | jq '' | wc -l) -gt 1 ]] && error "有多个端口，请自行修改"
 	read -rp "请输入 Xray 端口（默认为 443）：" port
 	[[ -z $port ]] && port=443
 	[[ $port -gt 65535 ]] && echo "请输入正确的端口" && mod_port
