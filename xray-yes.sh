@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.1.50"
+script_version="1.1.51"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf.d"
 website_dir="/home/wwwroot"
@@ -36,36 +36,36 @@ color() {
 }
 
 info() {
-	echo "[*] $@"
+	echo "[*] $*"
 }
 
 error() {
-	echo -e "${Red}[-]${Font} $@"
+	echo -e "${Red}[-]${Font} $*"
 	exit 1
 }
 
 success() {
-	echo -e "${Green}[+]${Font} $@"
+	echo -e "${Green}[+]${Font} $*"
 }
 
 warning() {
-	echo -e "${Yellow}[*]${Font} $@"
+	echo -e "${Yellow}[*]${Font} $*"
 }
 
 panic() {
-	echo -e "${RedBG}$@${Font}"
+	echo -e "${RedBG}$*${Font}"
 	exit 1
 }
 
 update_script() {
 	fail=0
 	ol_version=$(curl -sL github.com/jiuqi9997/Xray-yes/raw/main/xray-yes.sh | grep "script_version=" | head -1 | awk -F '=|"' '{print $3}')
-	if [[ $(echo -e "$ol_version\n$script_version" | sort -rV | head -n 1) == $ol_version && $ol_version != $script_version ]]; then
+	if [[ $(echo -e "$ol_version\n$script_version" | sort -rV | head -n 1) == "$ol_version" && "$ol_version" != "$script_version" ]]; then
 		wget -O xray-yes.sh github.com/jiuqi9997/Xray-yes/raw/main/xray-yes.sh || fail=1
 		[[ $fail -eq 1 ]] && warning "更新失败" && sleep 2 && return 0
 		success "更新成功"
 		sleep 2
-		bash xray-yes.sh $@
+		bash xray-yes.sh "$*"
 		exit 0
 	fi
 }
@@ -99,10 +99,10 @@ prepare_installation() {
 	read -rp "请输入数字（默认为 IPv4 only）：" ip_type
 	[[ -z $ip_type ]] && ip_type=1
 	if [[ $ip_type -eq 1 ]]; then
-		domain_ip=$(ping -4 $xray_domain -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
+		domain_ip=$(ping -4 "$xray_domain" -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
 		server_ip=$(curl -sL https://api64.ipify.org -4 || fail=1)
 		[[ $fail -eq 1 ]] && error "本机 IP 地址获取失败"
-		[[ $server_ip == $domain_ip ]] && success "域名已经解析到本机" && success=1
+		[[ "$server_ip" == "$domain_ip" ]] && success "域名已经解析到本机" && success=1
 		if [[ $success -ne 1 ]]; then
 			warning "域名没有解析到本机，证书申请可能失败"
 			read -rp "继续？（yes/no）" choice
@@ -123,10 +123,10 @@ prepare_installation() {
 			esac
 		fi
 	elif [[ $ip_type -eq 2 ]]; then
-		domain_ip=$(ping -6 $xray_domain -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
+		domain_ip=$(ping -6 "$xray_domain" -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
 		server_ip=$(curl -sL https://api64.ipify.org -6 || fail=1)
 		[[ $fail -eq 1 ]] && error "本机 IP 地址获取失败"
-		[[ $server_ip == $domain_ip ]] && success "域名已经解析到本机" && success=1
+		[[ "$server_ip" == "$domain_ip" ]] && success "域名已经解析到本机" && success=1
 		if [[ $success -ne 1 ]]; then
 			warning "域名没有解析到本机，证书申请可能失败"
 			read -rp "继续？（yes/no）" choice
@@ -147,10 +147,10 @@ prepare_installation() {
 			esac
 		fi
 	elif [[ $ip_type -eq 3 ]]; then
-		domain_ip=$(ping -4 $xray_domain -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
+		domain_ip=$(ping -4 "$xray_domain" -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
 		server_ip=$(curl -sL https://api64.ipify.org -4 || fail=1)
 		[[ $fail -eq 1 ]] && error "本机 IPv4 地址获取失败"
-		[[ $server_ip == $domain_ip ]] && success "域名已经解析到本机（IPv4）" && success=1
+		[[ "$server_ip" == "$domain_ip" ]] && success "域名已经解析到本机（IPv4）" && success=1
 		if [[ $success -ne 1 ]]; then
 			warning "域名没有解析到本机（IPv4），证书申请可能失败"
 			read -rp "继续？（yes/no）" choice
@@ -170,10 +170,10 @@ prepare_installation() {
 				;;
 			esac
 		fi
-		domain_ip6=$(ping -6 $xray_domain -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
+		domain_ip6=$(ping -6 "$xray_domain" -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
 		server_ip6=$(curl https://api64.ipify.org -6 || fail=1)
 		[[ $fail -eq 1 ]] && error "本机 IPv6 地址获取失败"
-		[[ $server_ip == $domain_ip ]] && success "域名已经解析到本机（IPv6）" && success=1
+		[[ "$server_ip" == "$domain_ip" ]] && success "域名已经解析到本机（IPv6）" && success=1
 		if [[ $success -ne 1 ]]; then
 			warning "域名没有解析到本机（IPv6），证书申请可能失败"
 			read -rp "继续？（yes/no）" choice
@@ -199,13 +199,13 @@ prepare_installation() {
 	read -rp "请输入 xray 密码（默认使用 UUID）：" uuid
 	read -rp "请输入 xray 端口（默认为 443）：" port
 	[[ -z $port ]] && port=443
-	[[ $port > 65535 ]] && echo "请输入正确的端口" && install_all
+	[[ $port -gt 65535 ]] && echo "请输入正确的端口" && install_all
 	configure_firewall
 	nport=$(rand 10000 20000)
-	nport1=`expr $nport + 1`
-	while [[ $(ss -tnlp | grep ":$nport ") || $(ss -tnlp | grep ":$nport1 ") ]]; do
+	nport1=$(expr $nport + 1)
+	while ss -tnlp | grep -q ":$nport " || ss -tnlp | grep -q ":$nport1 "; do
 		nport=$(rand 10000 20000)
-		nport1=`expr $nport + 1`
+		nport1=$(expr $nport + 1)
 	done
 	success "准备完成，即将开始安装"
 }
@@ -264,12 +264,12 @@ rand() {
 }
 
 check_env() {
-	if [[ $(ss -tnlp | grep ":80 ") ]]; then
+	if ss -tnlp | grep -q ":80 "; then
 		error "80 端口被占用（需用于申请证书）"
 	fi
-	if [[ $port -eq "443" && $(ss -tnlp | grep ":443 ") ]]; then
+	if [[ $port -eq "443" ]] && ss -tnlp | grep ":443 "; then
 		error "443 端口被占用"
-	elif [[ $(ss -tnlp | grep ":$port ") ]]; then
+	elif ss -tnlp | grep ":$port "; then
 		error "$port 端口被占用"
 	fi
 }
@@ -282,7 +282,7 @@ install_packages() {
 		$PM update
 		$INS wget curl gnupg2 ca-certificates dmidecode lsb-release
 		update-ca-certificates
-		echo "deb http://nginx.org/packages/$ID `lsb_release -cs` nginx" | tee /etc/apt/sources.list.d/nginx.list
+		echo "deb http://nginx.org/packages/$ID $(lsb_release -cs) nginx" | tee /etc/apt/sources.list.d/nginx.list
 		curl -fsSL https://nginx.org/keys/nginx_signing.key | apt-key add -
 		$PM update
 		$INS $apt_packages
@@ -319,8 +319,9 @@ http {
     include       /etc/nginx/mime.types;
     default_type  application/octet-stream;
 
-    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '                      '$status $body_bytes_sent "$http_referer" '
-                      '"$http_user_agent" "$http_x_forwarded_for"';
+    log_format  main  '\$remote_addr - \$remote_user [\$time_local] "\$request" '
+		      '\$status \$body_bytes_sent "\$http_referer" '
+                      '"\$http_user_agent" "\$http_x_forwarded_for"';
 
     access_log  /var/log/nginx/access.log  main;
 
@@ -351,7 +352,7 @@ install_acme() {
 install_xray() {
 	info "安装 Xray"
 	curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s -- install
-	[[ ! $(ps aux | grep xray) ]] && error "Xray 安装失败"
+	ps aux | grep -q xray || error "Xray 安装失败"
 	success "Xray 安装成功"
 }
 
@@ -359,9 +360,9 @@ issue_certificate() {
 	info "申请 SSL 证书"
 	fail=0
 	mkdir -p $nginx_conf_dir
-	mkdir -p $website_dir/$xray_domain
-	touch $website_dir/$xray_domain/index.html
-	cat > $nginx_conf_dir/default.conf << EOF
+	mkdir -p "$website_dir/$xray_domain"
+	touch "$website_dir/$xray_domain/index.html"
+	cat > "$nginx_conf_dir/default.conf" << EOF
 server
 {
 	listen 80 default_server;
@@ -373,24 +374,24 @@ server
 	error_log /dev/null;
 }
 EOF
-	cat > $nginx_conf_dir/$xray_domain.conf <<EOF
+	cat > "$nginx_conf_dir/$xray_domain.conf" <<EOF
 server
 {
 	listen 80;
 	listen [::]:80;
-	server_name $xray_domain;
-	root $website_dir/$xray_domain;
+	server_name "$xray_domain";
+	root "$website_dir/$xray_domain";
 
 	access_log /dev/null;
 	error_log /dev/null;
 }
 EOF
 	nginx -s reload
-	/root/.acme.sh/acme.sh --issue -d $xray_domain --keylength ec-256 --fullchain-file $cert_dir/cert.pem --key-file $cert_dir/key.pem --webroot $website_dir/$xray_domain --renew-hook "systemctl restart xray" --force || fail=1
+	/root/.acme.sh/acme.sh --issue -d "$xray_domain" --keylength ec-256 --fullchain-file $cert_dir/cert.pem --key-file $cert_dir/key.pem --webroot "$website_dir/$xray_domain" --renew-hook "systemctl restart xray" --force || fail=1
 	[[ $fail -eq 1 ]] && error "证书申请失败"
 	generate_certificate
 	chmod 600 $cert_dir/cert.pem $cert_dir/key.pem $cert_dir/self_signed_cert.pem $cert_dir/self_signed_key.pem
-	if [[ $(grep nogroup /etc/group) ]]; then
+	if grep -q nogroup /etc/group; then
 		chown nobody:nogroup $cert_dir/cert.pem $cert_dir/key.pem $cert_dir/self_signed_cert.pem $cert_dir/self_signed_key.pem
 	else
 		chown nobody:nobody $cert_dir/cert.pem $cert_dir/key.pem $cert_dir/self_signed_cert.pem $cert_dir/self_signed_key.pem
@@ -479,18 +480,18 @@ EOF
 
 xray_restart() {
 	systemctl restart xray
-	[[ ! $(ps aux | grep xray) ]] && error "Xray 重启失败"
+	ps aux | grep -q xray || error "Xray 重启失败"
 	success "Xray 重启成功"
 	sleep 2
 }
 
 configure_nginx() {
-	rm -rf $website_dir/$xray_domain
-	mkdir -p $website_dir/$xray_domain
+	rm -rf "$website_dir/$xray_domain"
+	mkdir -p "$website_dir/$xray_domain"
 	wget -O web.tar.gz https://github.com/jiuqi9997/Xray-yes/raw/main/web.tar.gz
-	tar xzvf web.tar.gz -C $website_dir/$xray_domain
+	tar xzvf web.tar.gz -C "$website_dir/$xray_domain"
 	rm -rf web.tar.gz
-	cat > $nginx_conf_dir/$xray_domain.conf <<EOF
+	cat > "$nginx_conf_dir/$xray_domain.conf" <<EOF
 server
 {
 	listen 80;
@@ -552,7 +553,7 @@ finish() {
 
 update_xray() {
 	curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s -- install
-	[[ ! $(ps aux | grep xray) ]] && error "Xray 更新失败"
+	ps aux | grep -q xray || error "Xray 更新失败"
 	success "Xray 更新成功"
 }
 
@@ -575,12 +576,12 @@ uninstall_all() {
 mod_uuid() {
 	fail=0
 	uuid_old=$(jq '.inbounds[].settings.clients[].id' $xray_conf || fail=1)
-	[[ $(echo $uuid_old | jq '' | wc -l) > 1 ]] && error "有多个 UUID，请自行修改"
+	[[ $(echo $uuid_old | jq '' | wc -l) -gt 1 ]] && error "有多个 UUID，请自行修改"
 	uuid_old=$(echo $uuid_old | sed 's/\"//g')
 	read -rp "请输入 Xray 密码（默认使用 UUID）：" uuid
 	[[ -z $uuid ]] && uuid=$(xray uuid)
 	sed -i "s/$uuid_old/$uuid/g" $xray_conf $info_file
-	[[ $(grep "$uuid" $xray_conf ) ]] && success "UUID 修改成功"
+	grep -q "$uuid" $xray_conf && success "UUID 修改成功"
 	sleep 2
 	xray_restart
 	menu
@@ -589,14 +590,14 @@ mod_uuid() {
 mod_port() {
 	fail=0
 	port_old=$(jq '.inbounds[].port' $xray_conf || fail=1)
-	[[ $(echo $port_old | jq '' | wc -l) > 1 ]] && error "有多个端口，请自行修改"
+	[[ $(echo $port_old | jq '' | wc -l) -gt 1 ]] && error "有多个端口，请自行修改"
 	read -rp "请输入 Xray 端口（默认为 443）：" port
 	[[ -z $port ]] && port=443
-	[[ $port > 65535 ]] && echo "请输入正确的端口" && mod_port
+	[[ $port -gt 65535 ]] && echo "请输入正确的端口" && mod_port
 	[[ $port -ne 443 ]] && configure_firewall $port
 	configure_firewall
 	sed -i "s/$port_old/$port/g" $xray_conf $info_file
-	[[ $(grep $port $xray_conf ) ]] && success "端口修改成功"
+	grep -q $port $xray_conf && success "端口修改成功"
 	sleep 2
 	xray_restart
 	menu
@@ -695,7 +696,7 @@ main() {
 	clear
 	check_root
 	color
-	update_script $@
+	update_script "$*"
 	case $1 in
 	install)
 		install_all
@@ -718,4 +719,4 @@ main() {
 	esac
 }
 
-main $@
+main "$*"

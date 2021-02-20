@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.1.50"
+script_version="1.1.51"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf.d"
 website_dir="/home/wwwroot"
@@ -36,36 +36,36 @@ color() {
 }
 
 info() {
-	echo "[*] $@"
+	echo "[*] $*"
 }
 
 error() {
-	echo -e "${Red}[-]${Font} $@"
+	echo -e "${Red}[-]${Font} $*"
 	exit 1
 }
 
 success() {
-	echo -e "${Green}[+]${Font} $@"
+	echo -e "${Green}[+]${Font} $*"
 }
 
 warning() {
-	echo -e "${Yellow}[*]${Font} $@"
+	echo -e "${Yellow}[*]${Font} $*"
 }
 
 panic() {
-	echo -e "${RedBG}$@${Font}"
+	echo -e "${RedBG}$*${Font}"
 	exit 1
 }
 
 update_script() {
 	fail=0
 	ol_version=$(curl -sL github.com/jiuqi9997/Xray-yes/raw/main/xray-yes-en.sh | grep "script_version=" | head -1 | awk -F '=|"' '{print $3}')
-	if [[ $(echo -e "$ol_version\n$script_version" | sort -rV | head -n 1) == $ol_version && $ol_version != $script_version ]]; then
+	if [[ $(echo -e "$ol_version\n$script_version" | sort -rV | head -n 1) == "$ol_version" && "$ol_version" != "$script_version" ]]; then
 		wget -O xray-yes-en.sh github.com/jiuqi9997/Xray-yes/raw/main/xray-yes-en.sh || fail=1
 		[[ $fail -eq 1 ]] && warning "Failed to update" && sleep 2 && return 0
 		success "Successfully updated"
 		sleep 2
-		bash xray-yes-en.sh $@
+		bash xray-yes-en.sh "$*"
 		exit 0
 	fi
 }
@@ -99,10 +99,10 @@ prepare_installation() {
 	read -rp "Enter a number (default IPv4 only): " ip_type
 	[[ -z $ip_type ]] && ip_type=1
 	if [[ $ip_type -eq 1 ]]; then
-		domain_ip=$(ping -4 $xray_domain -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
+		domain_ip=$(ping -4 "$xray_domain" -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
 		server_ip=$(curl -sL https://api64.ipify.org -4 || fail=1)
 		[[ $fail -eq 1 ]] && error "Failed to get local IP address"
-		[[ $server_ip == $domain_ip ]] && success "The domain name has been resolved to the local IP address" && success=1
+		[[ "$server_ip" == "$domain_ip" ]] && success "The domain name has been resolved to the local IP address" && success=1
 		if [[ $success -ne 1 ]]; then
 			warning "The domain name is not resolved to the local IP address, the certificate issuance may fail"
 			read -rp "Continue? (yes/no): " choice
@@ -123,10 +123,10 @@ prepare_installation() {
 			esac
 		fi
 	elif [[ $ip_type -eq 2 ]]; then
-		domain_ip=$(ping -6 $xray_domain -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
+		domain_ip=$(ping -6 "$xray_domain" -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
 		server_ip=$(curl -sL https://api64.ipify.org -6 || fail=1)
 		[[ $fail -eq 1 ]] && error "Failed to get the local IP address"
-		[[ $server_ip == $domain_ip ]] && success "The domain name has been resolved to the local IP address" && success=1
+		[[ "$server_ip" == "$domain_ip" ]] && success "The domain name has been resolved to the local IP address" && success=1
 		if [[ $success -ne 1 ]]; then
 			warning "The domain name is not resolved to the local IP address, the certificate issuance may fail"
 			read -rp "Continue? (yes/no):" choice
@@ -147,10 +147,10 @@ prepare_installation() {
 			esac
 		fi
 	elif [[ $ip_type -eq 3 ]]; then
-		domain_ip=$(ping -4 $xray_domain -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
+		domain_ip=$(ping -4 "$xray_domain" -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
 		server_ip=$(curl -sL https://api64.ipify.org -4 || fail=1)
 		[[ $fail -eq 1 ]] && error "Failed to get the local IP address (IPv4)"
-		[[ $server_ip == $domain_ip ]] && success "The domain name has been resolved to the local IP address (IPv4)" && success=1
+		[[ "$server_ip" == "$domain_ip" ]] && success "The domain name has been resolved to the local IP address (IPv4)" && success=1
 		if [[ $success -ne 1 ]]; then
 			warning "The domain name is not resolved to the local IP address (IPv4), the certificate issuance may fail"
 			read -rp "Continue? (yes/no):" choice
@@ -170,10 +170,10 @@ prepare_installation() {
 				;;
 			esac
 		fi
-		domain_ip6=$(ping -6 $xray_domain -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
+		domain_ip6=$(ping -6 "$“”“xray_dom"ain -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
 		server_ip6=$(curl https://api64.ipify.org -6 || fail=1)
 		[[ $fail -eq 1 ]] && error "Failed to get the local IP address (IPv6)"
-		[[ $server_ip == $domain_ip ]] && success "The domain name has been resolved to the local IP address (IPv6)" && success=1
+		[[ "$server_ip" == "$domain_ip" ]] && success "The domain name has been resolved to the local IP address (IPv6)" && success=1
 		if [[ $success -ne 1 ]]; then
 			warning "The domain name is not resolved to the local IP address (IPv6), the certificate application may fail"
 			read -rp "Continue? (yes/no):" choice
@@ -199,13 +199,13 @@ prepare_installation() {
 	read -rp "Please enter the passwd for xray (default UUID): " uuid
 	read -rp "Please enter the port for xray (default 443): " port
 	[[ -z $port ]] && port=443
-	[[ $port > 65535 ]] && echo "Please enter a correct port" && install_all
+	[[ $port -gt 65535 ]] && echo "Please enter a correct port" && install_all
 	configure_firewall
 	nport=$(rand 10000 20000)
-	nport1=`expr $nport + 1`
-	while [[ $(ss -tnlp | grep ":$nport ") || $(ss -tnlp | grep ":$nport1 ") ]]; do
+	nport1=$(expr $nport + 1)
+	while ss -tnlp | grep -q ":$nport " || ss -tnlp | grep -q ":$nport1 "; do
 		nport=$(rand 10000 20000)
-		nport1=`expr $nport + 1`
+		nport1=$(expr $nport + 1)
 	done
 	success "Everything is ready, the installation is about to start."
 }
@@ -264,12 +264,12 @@ rand() {
 }
 
 check_env() {
-	if [[ $(ss -tnlp | grep ":80 ") ]]; then
+	if ss -tnlp | grep -q ":80 "; then
 		error "Port 80 is occupied (it's required for certificate application)"
 	fi
-	if [[ $port -eq "443" && $(ss -tnlp | grep ":443 ") ]]; then
+	if [[ $port -eq "443" ]] && ss -tnlp | grep -q ":443 "; then
 		error "Port 443 is occupied"
-	elif [[ $(ss -tnlp | grep ":$port ") ]]; then
+	elif ss -tnlp | grep -q ":$port "; then
 		error "Port $port is occupied"
 	fi
 }
@@ -282,7 +282,7 @@ install_packages() {
 		$PM update
 		$INS wget curl gnupg2 ca-certificates dmidecode lsb-release
 		update-ca-certificates
-		echo "deb http://nginx.org/packages/$ID `lsb_release -cs` nginx" | tee /etc/apt/sources.list.d/nginx.list
+		echo "deb http://nginx.org/packages/$ID $(lsb_release -cs) nginx" | tee /etc/apt/sources.list.d/nginx.list
 		curl -fsSL https://nginx.org/keys/nginx_signing.key | apt-key add -
 		$PM update
 		$INS $apt_packages
@@ -319,8 +319,9 @@ http {
     include       /etc/nginx/mime.types;
     default_type  application/octet-stream;
 
-    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '                      '$status $body_bytes_sent "$http_referer" '
-                      '"$http_user_agent" "$http_x_forwarded_for"';
+    log_format  main  '\$remote_addr - \$remote_user [\$time_local] "\$request" '
+                      '\$status \$body_bytes_sent "\$http_referer" '
+                      '"\$http_user_agent" "\$http_x_forwarded_for"';
 
     access_log  /var/log/nginx/access.log  main;
 
@@ -351,7 +352,7 @@ install_acme() {
 install_xray() {
 	info "Install Xray"
 	curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s -- install
-	[[ ! $(ps aux | grep xray) ]] && error "Failed to install Xray"
+	ps aux | grep -q xray || error "Failed to install Xray"
 	success "Successfully installed Xray"
 }
 
@@ -359,9 +360,9 @@ issue_certificate() {
 	fail=0
 	info "Issue a ssl certificate"
 	mkdir -p $nginx_conf_dir
-	mkdir -p $website_dir/$xray_domain
-	touch $website_dir/$xray_domain/index.html
-	cat > $nginx_conf_dir/default.conf << EOF
+	mkdir -p "$website_dir/$xray_domain"
+	touch "”$website_dir/$xray_domain/index.html"
+	cat > "$nginx_conf_dir/default.conf" << EOF
 server
 {
 	listen 80 default_server;
@@ -373,7 +374,7 @@ server
 	error_log /dev/null;
 }
 EOF
-	cat > $nginx_conf_dir/$xray_domain.conf <<EOF
+	cat > "$nginx_conf_dir/$xray_domain.conf" <<EOF
 server
 {
 	listen 80;
@@ -386,11 +387,11 @@ server
 }
 EOF
 	nginx -s reload
-	/root/.acme.sh/acme.sh --issue -d $xray_domain --keylength ec-256 --fullchain-file $cert_dir/cert.pem --key-file $cert_dir/key.pem --webroot $website_dir/$xray_domain --renew-hook "systemctl restart xray" --force || fail=1
+	/root/.acme.sh/acme.sh --issue -d "$xray_domain" --keylength ec-256 --fullchain-file $cert_dir/cert.pem --key-file $cert_dir/key.pem --webroot "$website_dir/$xray_domain" --renew-hook "systemctl restart xray" --force || fail=1
 	[[ $fail -eq 1 ]] && error "Failed to issue a ssl certificate"
 	generate_certificate
 	chmod 600 $cert_dir/cert.pem $cert_dir/key.pem $cert_dir/self_signed_cert.pem $cert_dir/self_signed_key.pem
-	if [[ $(grep nogroup /etc/group) ]]; then
+	if grep -q nogroup /etc/group; then
 		chown nobody:nogroup $cert_dir/cert.pem $cert_dir/key.pem $cert_dir/self_signed_cert.pem $cert_dir/self_signed_key.pem
 	else
 		chown nobody:nobody $cert_dir/cert.pem $cert_dir/key.pem $cert_dir/self_signed_cert.pem $cert_dir/self_signed_key.pem
@@ -479,18 +480,18 @@ EOF
 
 xray_restart() {
 	systemctl restart xray
-	[[ ! $(ps aux | grep xray) ]] && error "Failed to restart Xray"
+	ps aux | grep -q xray || error "Failed to restart Xray"
 	success "Successfully restarted Xray"
 	sleep 2
 }
 
 configure_nginx() {
-	rm -rf $website_dir/$xray_domain
-	mkdir -p $website_dir/$xray_domain
+	rm -rf "$website_dir/$xray_domain"
+	mkdir -p "$website_dir/$xray_domain"
 	wget -O web.tar.gz https://github.com/jiuqi9997/Xray-yes/raw/main/web.tar.gz
-	tar xzvf web.tar.gz -C $website_dir/$xray_domain
+	tar xzvf web.tar.gz -C "$website_dir/$xray_domain"
 	rm -rf web.tar.gz
-	cat > $nginx_conf_dir/$xray_domain.conf <<EOF
+	cat > "$nginx_conf_dir/$xray_domain.conf" <<EOF
 server
 {
 	listen 80;
@@ -552,7 +553,7 @@ finish() {
 
 update_xray() {
 	curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s -- install
-	[[ ! $(ps aux | grep xray) ]] && error "Failed to update Xray"
+	ps aux | grep -q xray || error "Failed to update Xray"
 	success "Successfully updated Xray"
 }
 
@@ -575,12 +576,12 @@ uninstall_all() {
 mod_uuid() {
 	fail=0
 	uuid_old=$(jq '.inbounds[].settings.clients[].id' $xray_conf || fail=1)
-	[[ $(echo $uuid_old | jq '' | wc -l) > 1 ]] && error "There are multiple UUIDs, please modify by yourself"
+	[[ $(echo $uuid_old | jq '' | wc -l) -gt 1 ]] && error "There are multiple UUIDs, please modify by yourself"
 	uuid_old=$(echo $uuid_old | sed 's/\"//g')
 	read -rp "Please enter the password for Xray (default UUID): " uuid
 	[[ -z $uuid ]] && uuid=$(xray uuid)
 	sed -i "s/$uuid_old/$uuid/g" $xray_conf $info_file
-	[[ $(grep "$uuid" $xray_conf ) ]] && success "Successfully modified the UUID"
+	grep -q "$uuid" $xray_conf && success "Successfully modified the UUID"
 	sleep 2
 	xray_restart
 	menu
@@ -589,14 +590,14 @@ mod_uuid() {
 mod_port() {
 	fail=0
 	port_old=$(jq '.inbounds[].port' $xray_conf || fail=1)
-	[[ $(echo $port_old | jq '' | wc -l) > 1 ]] && error "There are multiple ports, please modify by yourself"
+	[[ $(echo $port_old | jq '' | wc -l) -gt 1 ]] && error "There are multiple ports, please modify by yourself"
 	read -rp "Please enter the port for Xray (default 443): " port
 	[[ -z $port ]] && port=443
-	[[ $port > 65535 ]] && echo "Please enter a correct port" && mod_port
+	[[ $port -gt 65535 ]] && echo "Please enter a correct port" && mod_port
 	[[ $port -ne 443 ]] && configure_firewall $port
 	configure_firewall
 	sed -i "s/$port_old/$port/g" $xray_conf $info_file
-	[[ $(grep $port $xray_conf ) ]] && success "Successfully modified the port"
+	grep -q $port $xray_conf && success "Successfully modified the port"
 	sleep 2
 	xray_restart
 	menu
