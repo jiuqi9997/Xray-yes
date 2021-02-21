@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.1.52"
+script_version="1.1.53"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf.d"
 website_dir="/home/wwwroot"
@@ -401,12 +401,8 @@ EOF
 
 generate_certificate() {
 	info "Generate a self-signed certificate"
-	openssl genrsa -des3 -passout pass:xxxx -out server.pass.key 2048
-	openssl rsa -passin pass:xxxx -in server.pass.key -out $cert_dir/self_signed_key.pem
-	rm -rf server.pass.key
-	openssl req -new -key $cert_dir/self_signed_key.pem -out server.csr -subj "/CN=$server_ip"
-	openssl x509 -req -days 3650 -in server.csr -signkey $cert_dir/self_signed_key.pem -out $cert_dir/self_signed_cert.pem
-	rm -rf server.csr
+	openssl genrsa -out $cert_dir/self_signed_key.pem 2048
+	openssl req -new -x509 -days 3650 -key $cert_dir/self_signed_key.pem -out $cert_dir/self_signed_cert.pem -subj "/CN=$server_ip"
 	[[ ! -f $cert_dir/self_signed_cert.pem || ! -f $cert_dir/self_signed_key.pem ]] && error "Failed to generate a self-signed certificate"
 	success "Successfully generated a self-signed certificate"
 }
