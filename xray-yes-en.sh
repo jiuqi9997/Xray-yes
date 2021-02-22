@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.1.54"
+script_version="1.1.55"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf.d"
 website_dir="/home/wwwroot"
@@ -539,7 +539,7 @@ finish() {
 	echo -e "$Red Port: $Font $port " | tee -a $info_file
 	echo -e "$Red UUID/Passwd: $Font $uuid" | tee -a $info_file
 	echo -e "$Red Flow: $Font $xray_flow" | tee -a $info_file
-	echo -e "$Red Host: $Font $xray_domain" | tee -a $info_file
+	echo -e "$Red SNI: $Font $xray_domain" | tee -a $info_file
 	echo -e "$Red TLS: $Font ${RedBG}XTLS${Font}" | tee -a $info_file
 	echo ""
 	echo -e "$Red Share link: $Font vless://$uuid@$server_ip:$port?flow=xtls-rprx-direct&security=xtls&sni=$xray_domain#$xray_domain" | tee -a $info_file

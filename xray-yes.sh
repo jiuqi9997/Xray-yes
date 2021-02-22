@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.1.54"
+script_version="1.1.55"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf.d"
 website_dir="/home/wwwroot"
@@ -535,12 +535,12 @@ finish() {
 	echo ""
 	echo ""
 	echo -e "$Red Xray 配置信息 $Font" | tee $info_file
-	echo -e "$Red 地址（address）:$Font $server_ip " | tee -a $info_file
-	echo -e "$Red 端口（port）:$Font $port " | tee -a $info_file
-	echo -e "$Red 用户id（UUID/密码）:$Font $uuid" | tee -a $info_file
-	echo -e "$Red 流控（flow）:$Font $xray_flow" | tee -a $info_file
-	echo -e "$Red 伪装域名（host）:$Font $xray_domain" | tee -a $info_file
-	echo -e "$Red 底层传输安全（tls）:$Font ${RedBG}XTLS${Font}" | tee -a $info_file
+	echo -e "$Red 地址 (address): $Font $server_ip " | tee -a $info_file
+	echo -e "$Red 端口 (port): $Font $port " | tee -a $info_file
+	echo -e "$Red 用户id (UUID/密码): $Font $uuid" | tee -a $info_file
+	echo -e "$Red 流控 (flow): $Font $xray_flow" | tee -a $info_file
+	echo -e "$Red SNI: $Font $xray_domain" | tee -a $info_file
+	echo -e "$Red TLS: $Font ${RedBG}XTLS${Font}" | tee -a $info_file
 	echo ""
 	echo -e "$Red 分享链接:$Font vless://$uuid@$server_ip:$port?flow=xtls-rprx-direct&security=xtls&sni=$xray_domain#$xray_domain" | tee -a $info_file
 	echo ""
