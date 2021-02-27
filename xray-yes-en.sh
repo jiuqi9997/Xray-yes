@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.1.57"
+script_version="1.1.59"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf.d"
 website_dir="/home/wwwroot"
@@ -342,22 +342,18 @@ EOF
 
 install_acme() {
 	info "Started installing acme.sh"
-	fail=0
-	curl https://raw.githubusercontent.com/acmesh-official/acme.sh/master/acme.sh | bash -s -- --install-online || fail=1
-	[[ $fail -eq 1 ]] &&
-	error "Failed to install acme.sh"
+	curl -L get.acme.sh | bash || error "Failed to install acme.sh"
 	success "Successfully installed acme.sh"
 }
 
 install_xray() {
 	info "Install Xray"
-	curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s -- install
+	curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s - install
 	ps aux | grep -q xray || error "Failed to install Xray"
 	success "Successfully installed Xray"
 }
 
 issue_certificate() {
-	fail=0
 	info "Issue a ssl certificate"
 	mkdir -p $nginx_conf_dir
 	mkdir -p "$website_dir/$xray_domain"
@@ -387,16 +383,15 @@ server
 }
 EOF
 	nginx -s reload
-	/root/.acme.sh/acme.sh --issue -d "$xray_domain" --keylength ec-256 --fullchain-file $cert_dir/cert.pem --key-file $cert_dir/key.pem --webroot "$website_dir/$xray_domain" --renew-hook "systemctl restart xray" --force || fail=1
-	[[ $fail -eq 1 ]] && error "Failed to issue a ssl certificate"
+	/root/.acme.sh/acme.sh --issue -d "$xray_domain" --keylength ec-256 --fullchain-file $cert_dir/cert.pem --key-file $cert_dir/key.pem --webroot "$website_dir/$xray_domain" --renew-hook "systemctl restart xray" --force || error "Failed to issue a ssl certificate"
+	success "Successfully issued a ssl certificate"
 	generate_certificate
-	chmod 600 $cert_dir/cert.pem $cert_dir/key.pem $cert_dir/self_signed_cert.pem $cert_dir/self_signed_key.pem
-	if grep -q nogroup /etc/group; then
-		chown nobody:nogroup $cert_dir/cert.pem $cert_dir/key.pem $cert_dir/self_signed_cert.pem $cert_dir/self_signed_key.pem
+	chmod 600 $cert_dir/*.pem
+	if id nobody | grep -q nogroup; then
+		chown nobody:nogroup $cert_dir/*.pem
 	else
-		chown nobody:nobody $cert_dir/cert.pem $cert_dir/key.pem $cert_dir/self_signed_cert.pem $cert_dir/self_signed_key.pem
+		chown nobody:nobody $cert_dir/*.pem
 	fi
-	success "Successfully issued the ssl certificate"
 }
 
 generate_certificate() {
@@ -548,14 +543,14 @@ finish() {
 }
 
 update_xray() {
-	curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s -- install
+	curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s - install
 	ps aux | grep -q xray || error "Failed to update Xray"
 	success "Successfully updated Xray"
 }
 
 uninstall_all() {
 	get_info
-	curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s -- remove --purge
+	curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s - remove --purge
 	systemctl stop nginx
 	if [[ $ID == "debian" || $ID == "ubuntu" ]]; then
 		$PM purge -y nginx
@@ -570,21 +565,19 @@ uninstall_all() {
 }
 
 mod_uuid() {
-	fail=0
 	uuid_old=$(jq '.inbounds[].settings.clients[].id' $xray_conf || fail=1)
 	[[ $(echo "$uuid_old" | jq '' | wc -l) -gt 1 ]] && error "There are multiple UUIDs, please modify by yourself"
 	uuid_old=$(echo "$uuid_old" | sed 's/\"//g')
 	read -rp "Please enter the password for Xray (default UUID): " uuid
 	[[ -z $uuid ]] && uuid=$(xray uuid)
 	sed -i "s/$uuid_old/$uuid/g" $xray_conf $info_file
-	grep -q "$uuid" $xray_conf && success "Successfully modified the UUID"
+	grep -q "$uuid" $xray_conf && success "Successfully modified the UUID" || error "Failed to modify the UUID"
 	sleep 2
 	xray_restart
 	menu
 }
 
 mod_port() {
-	fail=0
 	port_old=$(jq '.inbounds[].port' $xray_conf || fail=1)
 	[[ $(echo "$port_old" | jq '' | wc -l) -gt 1 ]] && error "There are multiple ports, please modify by yourself"
 	read -rp "Please enter the port for Xray (default 443): " port
@@ -593,7 +586,7 @@ mod_port() {
 	[[ $port -ne 443 ]] && configure_firewall $port
 	configure_firewall
 	sed -i "s/$port_old/$port/g" $xray_conf $info_file
-	grep -q $port $xray_conf && success "Successfully modified the port"
+	grep -q $port $xray_conf && success "Successfully modified the port" || error "Failed to modify the port"
 	sleep 2
 	xray_restart
 	menu

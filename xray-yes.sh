@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.1.57"
+script_version="1.1.59"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf.d"
 website_dir="/home/wwwroot"
@@ -342,23 +342,19 @@ EOF
 
 install_acme() {
 	info "开始安装 acme.sh"
-	fail=0
-	curl https://raw.githubusercontent.com/acmesh-official/acme.sh/master/acme.sh | bash -s -- --install-online || fail=1
-	[[ $fail -eq 1 ]] &&
-	error "acme.sh 安装失败，退出中"
+	curl -L get.acme.sh | bash || error "acme.sh 安装失败，退出中"
 	success "acme.sh 安装成功"
 }
 
 install_xray() {
 	info "安装 Xray"
-	curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s -- install
+	curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s - install
 	ps aux | grep -q xray || error "Xray 安装失败"
 	success "Xray 安装成功"
 }
 
 issue_certificate() {
 	info "申请 SSL 证书"
-	fail=0
 	mkdir -p $nginx_conf_dir
 	mkdir -p "$website_dir/$xray_domain"
 	touch "$website_dir/$xray_domain/index.html"
@@ -387,16 +383,15 @@ server
 }
 EOF
 	nginx -s reload
-	/root/.acme.sh/acme.sh --issue -d "$xray_domain" --keylength ec-256 --fullchain-file $cert_dir/cert.pem --key-file $cert_dir/key.pem --webroot "$website_dir/$xray_domain" --renew-hook "systemctl restart xray" --force || fail=1
-	[[ $fail -eq 1 ]] && error "证书申请失败"
-	generate_certificate
-	chmod 600 $cert_dir/cert.pem $cert_dir/key.pem $cert_dir/self_signed_cert.pem $cert_dir/self_signed_key.pem
-	if grep -q nogroup /etc/group; then
-		chown nobody:nogroup $cert_dir/cert.pem $cert_dir/key.pem $cert_dir/self_signed_cert.pem $cert_dir/self_signed_key.pem
-	else
-		chown nobody:nobody $cert_dir/cert.pem $cert_dir/key.pem $cert_dir/self_signed_cert.pem $cert_dir/self_signed_key.pem
-	fi
+	/root/.acme.sh/acme.sh --issue -d "$xray_domain" --keylength ec-256 --fullchain-file $cert_dir/cert.pem --key-file $cert_dir/key.pem --webroot "$website_dir/$xray_domain" --renew-hook "systemctl restart xray" --force || error "证书申请失败"
 	success "证书申请成功"
+	generate_certificate
+	chmod 600 $cert_dir/*.pem
+	if id nobody | grep -q nogroup; then
+		chown nobody:nogroup $cert_dir/*.pem
+	else
+		chown nobody:nobody $cert_dir/*.pem
+	fi
 }
 
 generate_certificate() {
@@ -548,14 +543,14 @@ finish() {
 }
 
 update_xray() {
-	curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s -- install
+	curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s - install
 	ps aux | grep -q xray || error "Xray 更新失败"
 	success "Xray 更新成功"
 }
 
 uninstall_all() {
 	get_info
-	curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s -- remove --purge
+	curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s - remove --purge
 	systemctl stop nginx
 	if [[ $ID == "debian" || $ID == "ubuntu" ]]; then
 		$PM purge -y nginx
@@ -570,21 +565,19 @@ uninstall_all() {
 }
 
 mod_uuid() {
-	fail=0
 	uuid_old=$(jq '.inbounds[].settings.clients[].id' $xray_conf || fail=1)
 	[[ $(echo "$uuid_old" | jq '' | wc -l) -gt 1 ]] && error "有多个 UUID，请自行修改"
 	uuid_old=$(echo "$uuid_old" | sed 's/\"//g')
 	read -rp "请输入 Xray 密码（默认使用 UUID）：" uuid
 	[[ -z $uuid ]] && uuid=$(xray uuid)
 	sed -i "s/$uuid_old/$uuid/g" $xray_conf $info_file
-	grep -q "$uuid" $xray_conf && success "UUID 修改成功"
+	grep -q "$uuid" $xray_conf && success "UUID 修改成功" || error "UUID 修改失败"
 	sleep 2
 	xray_restart
 	menu
 }
 
 mod_port() {
-	fail=0
 	port_old=$(jq '.inbounds[].port' $xray_conf || fail=1)
 	[[ $(echo "$port_old" | jq '' | wc -l) -gt 1 ]] && error "有多个端口，请自行修改"
 	read -rp "请输入 Xray 端口（默认为 443）：" port
@@ -593,7 +586,7 @@ mod_port() {
 	[[ $port -ne 443 ]] && configure_firewall $port
 	configure_firewall
 	sed -i "s/$port_old/$port/g" $xray_conf $info_file
-	grep -q $port $xray_conf && success "端口修改成功"
+	grep -q $port $xray_conf && success "端口修改成功" || error "端口修改失败"
 	sleep 2
 	xray_restart
 	menu
