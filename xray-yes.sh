@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Github: https://github.com/jiuqi9997/Xray-yes
 # Script link: https://github.com/jiuqi9997/Xray-yes/raw/main/xray-yes.sh
 #
@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.1.59"
+script_version="1.1.60"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf.d"
 website_dir="/home/wwwroot"
@@ -529,15 +529,15 @@ finish() {
 	success "Xray 安装成功 (VLESS+tcp+xtls+nginx)"
 	echo ""
 	echo ""
-	echo -e "$Red Xray 配置信息 $Font" | tee $info_file
-	echo -e "$Red 地址 (address): $Font $server_ip " | tee -a $info_file
-	echo -e "$Red 端口 (port): $Font $port " | tee -a $info_file
-	echo -e "$Red 用户id (UUID/密码): $Font $uuid" | tee -a $info_file
-	echo -e "$Red 流控 (flow): $Font $xray_flow" | tee -a $info_file
-	echo -e "$Red SNI: $Font $xray_domain" | tee -a $info_file
-	echo -e "$Red TLS: $Font ${RedBG}XTLS${Font}" | tee -a $info_file
+	echo -e "$Green Xray 配置信息 $Font" | tee $info_file
+	echo -e "$Green 地址 (address): $Font $server_ip " | tee -a $info_file
+	echo -e "$Green 端口 (port): $Font $port " | tee -a $info_file
+	echo -e "$Green 用户id (UUID/密码): $Font $uuid" | tee -a $info_file
+	echo -e "$Green 流控 (flow): $Font $xray_flow" | tee -a $info_file
+	echo -e "$Green SNI: $Font $xray_domain" | tee -a $info_file
+	echo -e "$Green TLS: $Font ${RedBG}XTLS${Font}" | tee -a $info_file
 	echo ""
-	echo -e "$Red 分享链接:$Font vless://$uuid@$server_ip:$port?flow=xtls-rprx-direct&security=xtls&sni=$xray_domain#$xray_domain" | tee -a $info_file
+	echo -e "$Green 分享链接:$Font vless://$uuid@$server_ip:$port?flow=xtls-rprx-direct&security=xtls&sni=$xray_domain#$xray_domain" | tee -a $info_file
 	echo ""
 	echo -e "${GreenBG} 提示：${Font}您可以在 Linux 平台上使用流控 ${RedBG}xtls-rprx-splice${Font} 以获得更好的性能。"
 }

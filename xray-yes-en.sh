@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Github: https://github.com/jiuqi9997/Xray-yes
 # Script link: https://github.com/jiuqi9997/Xray-yes/raw/main/xray-yes-en.sh
 #
@@ -8,7 +8,7 @@
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
 export PATH
 stty erase ^?
-script_version="1.1.59"
+script_version="1.1.60"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf.d"
 website_dir="/home/wwwroot"
@@ -529,15 +529,15 @@ finish() {
 	success "Successfully installed Xray (VLESS+tcp+xtls+nginx)"
 	echo ""
 	echo ""
-	echo -e "$Red Xray configuration $Font" | tee $info_file
-	echo -e "$Red Address: $Font $server_ip " | tee -a $info_file
-	echo -e "$Red Port: $Font $port " | tee -a $info_file
-	echo -e "$Red UUID/Passwd: $Font $uuid" | tee -a $info_file
-	echo -e "$Red Flow: $Font $xray_flow" | tee -a $info_file
-	echo -e "$Red SNI: $Font $xray_domain" | tee -a $info_file
-	echo -e "$Red TLS: $Font ${RedBG}XTLS${Font}" | tee -a $info_file
+	echo -e "$Green Xray configuration $Font" | tee $info_file
+	echo -e "$Green Address: $Font $server_ip " | tee -a $info_file
+	echo -e "$Green Port: $Font $port " | tee -a $info_file
+	echo -e "$Green UUID/Passwd: $Font $uuid" | tee -a $info_file
+	echo -e "$Green Flow: $Font $xray_flow" | tee -a $info_file
+	echo -e "$Green SNI: $Font $xray_domain" | tee -a $info_file
+	echo -e "$Green TLS: $Font ${RedBG}XTLS${Font}" | tee -a $info_file
 	echo ""
-	echo -e "$Red Share link: $Font vless://$uuid@$server_ip:$port?flow=xtls-rprx-direct&security=xtls&sni=$xray_domain#$xray_domain" | tee -a $info_file
+	echo -e "$Green Share link: $Font vless://$uuid@$server_ip:$port?flow=xtls-rprx-direct&security=xtls&sni=$xray_domain#$xray_domain" | tee -a $info_file
 	echo ""
 	echo -e "${GreenBG} Tip: ${Font}You can use flow control ${RedBG}xtls-rprx-splice${Font} on the Linux platform to get better performance."
 }
