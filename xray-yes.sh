@@ -7,7 +7,7 @@
 
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 stty erase ^?
-script_version="1.1.62"
+script_version="1.1.63"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf.d"
 website_dir="/home/wwwroot"
@@ -59,7 +59,7 @@ panic() {
 update_script() {
 	fail=0
 	ol_version=$(curl -sL github.com/jiuqi9997/Xray-yes/raw/main/xray-yes.sh | grep "script_version=" | head -1 | awk -F '=|"' '{print $3}')
-	if [[ $(echo -e "$ol_version\n$script_version" | sort -rV | head -n 1) == "$ol_version" && "$ol_version" != "$script_version" ]]; then
+	if [[ ! $(echo -e "$ol_version\n$script_version" | sort -rV | head -n 1) == "$script_version" ]]; then
 		wget -O xray-yes.sh github.com/jiuqi9997/Xray-yes/raw/main/xray-yes.sh || fail=1
 		[[ $fail -eq 1 ]] && warning "更新失败" && sleep 2 && return 0
 		success "更新成功"
@@ -274,7 +274,7 @@ check_env() {
 }
 
 install_packages() {
-	info "开始安装软件包"
+	info "正在安装软件包"
 	rpm_packages="tar zip unzip openssl lsof git jq socat nginx crontabs"
 	apt_packages="tar zip unzip openssl lsof git jq socat nginx cron"
 	if [[ $PM == "apt-get" ]]; then
@@ -336,24 +336,24 @@ http {
 EOF
 	systemctl enable nginx
 	systemctl start nginx
-	success "软件包安装完成"
+	success "软件包安装成功"
 }
 
 install_acme() {
-	info "开始安装 acme.sh"
+	info "正在安装 acme.sh"
 	curl -L get.acme.sh | bash || error "acme.sh 安装失败，退出中"
 	success "acme.sh 安装成功"
 }
 
 install_xray() {
-	info "安装 Xray"
+	info "正在安装 Xray"
 	curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s - install
 	ps aux | grep -q xray || error "Xray 安装失败"
 	success "Xray 安装成功"
 }
 
 issue_certificate() {
-	info "申请 SSL 证书"
+	info "正在申请 SSL 证书"
 	mkdir -p $nginx_conf_dir
 	mkdir -p "$website_dir/$xray_domain"
 	touch "$website_dir/$xray_domain/index.html"
@@ -394,7 +394,7 @@ EOF
 }
 
 generate_certificate() {
-	info "生成自签名证书"
+	info "正在生成自签名证书"
 	openssl genrsa -out $cert_dir/self_signed_key.pem 2048
 	openssl req -new -x509 -days 3650 -key $cert_dir/self_signed_key.pem -out $cert_dir/self_signed_cert.pem -subj "/CN=$server_ip"
 	[[ ! -f $cert_dir/self_signed_cert.pem || ! -f $cert_dir/self_signed_key.pem ]] && error "生成自签名证书失败"
@@ -410,6 +410,25 @@ configure_xray() {
         "access": "$xray_access_log",
         "error": "$xray_error_log",
         "loglevel": "warning"
+    },
+    "routing": {
+        "domainStrategy": "AsIs",
+        "rules": [
+            {
+                "type": "field",
+                "ip": [
+                    "geoip:private"
+                ],
+                "outboundTag": "block"
+            },
+	    {
+                "type": "field",
+                "domain": [
+                    "geosite:category-ads-all"
+                ],
+                "outboundTag": "block"
+            }
+        ]
     },
     "inbounds": [
         {
@@ -460,7 +479,12 @@ configure_xray() {
     ],
     "outbounds": [
         {
+            "tag": "direct",
             "protocol": "freedom"
+        },
+        {
+            "tag": "block",
+            "protocol": "blackhole"
         }
     ]
 }

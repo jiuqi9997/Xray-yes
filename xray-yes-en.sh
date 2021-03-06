@@ -7,7 +7,7 @@
 
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 stty erase ^?
-script_version="1.1.62"
+script_version="1.1.63"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf.d"
 website_dir="/home/wwwroot"
@@ -59,7 +59,7 @@ panic() {
 update_script() {
 	fail=0
 	ol_version=$(curl -sL github.com/jiuqi9997/Xray-yes/raw/main/xray-yes-en.sh | grep "script_version=" | head -1 | awk -F '=|"' '{print $3}')
-	if [[ $(echo -e "$ol_version\n$script_version" | sort -rV | head -n 1) == "$ol_version" && "$ol_version" != "$script_version" ]]; then
+	if [[ ! $(echo -e "$ol_version\n$script_version" | sort -rV | head -n 1) == "$script_version" ]]; then
 		wget -O xray-yes-en.sh github.com/jiuqi9997/Xray-yes/raw/main/xray-yes-en.sh || fail=1
 		[[ $fail -eq 1 ]] && warning "Failed to update" && sleep 2 && return 0
 		success "Successfully updated"
@@ -274,7 +274,7 @@ check_env() {
 }
 
 install_packages() {
-	info "Install the software packages"
+	info "Installing the software packages"
 	rpm_packages="tar zip unzip openssl lsof git jq socat nginx crontabs"
 	apt_packages="tar zip unzip openssl lsof git jq socat nginx cron"
 	if [[ $PM == "apt-get" ]]; then
@@ -336,24 +336,24 @@ http {
 EOF
 	systemctl enable nginx
 	systemctl start nginx
-	success "Completed the installaion of the packages"
+	success "Successfully installed the packages"
 }
 
 install_acme() {
-	info "Started installing acme.sh"
+	info "Installing acme.sh"
 	curl -L get.acme.sh | bash || error "Failed to install acme.sh"
 	success "Successfully installed acme.sh"
 }
 
 install_xray() {
-	info "Install Xray"
+	info "Installing Xray"
 	curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s - install
 	ps aux | grep -q xray || error "Failed to install Xray"
 	success "Successfully installed Xray"
 }
 
 issue_certificate() {
-	info "Issue a ssl certificate"
+	info "Issuing a ssl certificate"
 	mkdir -p $nginx_conf_dir
 	mkdir -p "$website_dir/$xray_domain"
 	touch "$website_dir/$xray_domain/index.html"
@@ -394,7 +394,7 @@ EOF
 }
 
 generate_certificate() {
-	info "Generate a self-signed certificate"
+	info "Generating a self-signed certificate"
 	openssl genrsa -out $cert_dir/self_signed_key.pem 2048
 	openssl req -new -x509 -days 3650 -key $cert_dir/self_signed_key.pem -out $cert_dir/self_signed_cert.pem -subj "/CN=$server_ip"
 	[[ ! -f $cert_dir/self_signed_cert.pem || ! -f $cert_dir/self_signed_key.pem ]] && error "Failed to generate a self-signed certificate"
@@ -410,6 +410,25 @@ configure_xray() {
         "access": "$xray_access_log",
         "error": "$xray_error_log",
         "loglevel": "warning"
+    },
+    "routing": {
+        "domainStrategy": "AsIs",
+        "rules": [
+            {
+                "type": "field",
+                "ip": [
+                    "geoip:private"
+                ],
+                "outboundTag": "block"
+            },
+            {
+                "type": "field",
+                "domain": [
+                    "geosite:category-ads-all"
+                ],
+                "outboundTag": "block"
+            }
+        ]
     },
     "inbounds": [
         {
@@ -460,7 +479,12 @@ configure_xray() {
     ],
     "outbounds": [
         {
+            "tag": "direct",
             "protocol": "freedom"
+        },
+        {
+            "tag": "block",
+            "protocol": "blackhole"
         }
     ]
 }
