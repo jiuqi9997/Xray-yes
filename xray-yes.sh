@@ -7,7 +7,7 @@
 
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 stty erase ^?
-script_version="1.1.66"
+script_version="1.1.67"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf.d"
 website_dir="/home/wwwroot"
@@ -76,6 +76,7 @@ install_all() {
 	install_packages
 	install_acme
 	install_xray
+	generate_uuid
 	issue_certificate
 	configure_xray
 	xray_restart
@@ -196,7 +197,6 @@ prepare_installation() {
 		error "请输入正确的数字"
 	fi
 	read -rp "请输入 xray 密码（默认使用 UUID）：" passwd
-	[[ -z $passwd ]] && uuid=$(xray uuid) || uuidv5=$(xray uuid -i "$passwd")
 	read -rp "请输入 xray 端口（默认为 443）：" port
 	[[ -z $port ]] && port=443
 	[[ $port -gt 65535 ]] && echo "请输入正确的端口" && install_all
@@ -351,6 +351,10 @@ install_xray() {
 	curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s - install
 	ps aux | grep -q xray || error "Xray 安装失败"
 	success "Xray 安装成功"
+}
+
+generate_uuid() {
+	[[ -z $passwd ]] && uuid=$(xray uuid) || uuidv5=$(xray uuid -i "$passwd") || error "生成 UUID 失败"
 }
 
 issue_certificate() {
@@ -591,7 +595,7 @@ mod_uuid() {
 	[[ $(echo "$uuid_old" | jq '' | wc -l) -gt 1 ]] && error "有多个 UUID，请自行修改"
 	uuid_old=$(echo "$uuid_old" | sed 's/\"//g')
 	read -rp "请输入 Xray 密码（默认使用 UUID）：" passwd
-	[[ -z $passwd ]] && uuid=$(xray uuid) || uuidv5=$(xray uuid -i "$passwd")
+	generate_uuid
 	sed -i "s/$uuid_old/${uuid:-uuidv5}/g" $xray_conf $info_file
 	grep -q "$uuid" $xray_conf && success "UUID 修改成功" || error "UUID 修改失败"
 	sleep 2
