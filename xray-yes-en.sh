@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Github: https://github.com/jiuqi9997/Xray-yes
 # Script link: https://github.com/jiuqi9997/Xray-yes/raw/main/xray-yes-en.sh
-#
+# Supported systems: Debian 9+/Ubuntu 18.04+/CentOS 7+
 # Thanks for using.
 #
 
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 stty erase ^?
-script_version="1.1.64"
+script_version="1.1.65"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf.d"
 website_dir="/home/wwwroot"
@@ -499,7 +499,7 @@ xray_restart() {
 }
 
 configure_nginx() {
-	rm -rf "$website_dir/$xray_domain"
+	rm -rf "${website_dir:-}/$xray_domain"
 	mkdir -p "$website_dir/$xray_domain"
 	wget -O web.tar.gz https://github.com/jiuqi9997/Xray-yes/raw/main/web.tar.gz
 	tar xzvf web.tar.gz -C "$website_dir/$xray_domain"
@@ -638,7 +638,7 @@ switch_to_cn() {
 menu() {
 	clear
 	echo ""
-	echo -e "  XRAY-YES - Install and manage Xray $Red[$script_version]$Font"
+	echo -e "  XRAY-YES - Install and manage Xray $Red""[$script_version]""$Font"
 	echo -e "  https://github.com/jiuqi9997/Xray-yes"
 	echo ""
 	echo -e " ---------------------------------------"
