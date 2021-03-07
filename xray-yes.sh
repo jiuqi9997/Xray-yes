@@ -563,7 +563,7 @@ finish() {
 	echo -e "$Green SNI: $Font $xray_domain" | tee -a $info_file
 	echo -e "$Green TLS: $Font ${RedBG}XTLS${Font}" | tee -a $info_file
 	echo ""
-	echo -e "$Green 分享链接:$Font vless://${$uuid:-$uuidv5}@$server_ip:$port?flow=xtls-rprx-direct&security=xtls&sni=$xray_domain#$xray_domain" | tee -a $info_file
+	echo -e "$Green 分享链接:$Font vless://${uuid:-$uuidv5}@$server_ip:$port?flow=xtls-rprx-direct&security=xtls&sni=$xray_domain#$xray_domain" | tee -a $info_file
 	echo ""
 	echo -e "${GreenBG} 提示：${Font}您可以在 Linux 平台上使用流控 ${RedBG}xtls-rprx-splice${Font} 以获得更好的性能。"
 }
