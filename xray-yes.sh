@@ -7,7 +7,7 @@
 
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 stty erase ^?
-script_version="1.1.65"
+script_version="1.1.66"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf.d"
 website_dir="/home/wwwroot"
@@ -195,7 +195,8 @@ prepare_installation() {
 	else
 		error "请输入正确的数字"
 	fi
-	read -rp "请输入 xray 密码（默认使用 UUID）：" uuid
+	read -rp "请输入 xray 密码（默认使用 UUID）：" passwd
+	[[ -z $passwd ]] && uuid=$(xray uuid) || uuidv5=$(xray uuid -i "$passwd")
 	read -rp "请输入 xray 端口（默认为 443）：" port
 	[[ -z $port ]] && port=443
 	[[ $port -gt 65535 ]] && echo "请输入正确的端口" && install_all
@@ -402,7 +403,6 @@ generate_certificate() {
 }
 
 configure_xray() {
-	[[ -z $uuid ]] && uuid=$(xray uuid)
 	xray_flow="xtls-rprx-direct"
 	cat > $xray_conf << EOF
 {
@@ -437,7 +437,7 @@ configure_xray() {
             "settings": {
                 "clients": [
                     {
-                        "id": "$uuid",
+                        "id": "${passwd:-$uuid}",
                         "flow": "$xray_flow"
                     }
                 ],
@@ -499,7 +499,7 @@ xray_restart() {
 }
 
 configure_nginx() {
-	rm -rf "${website_dir:-}/$xray_domain"
+	rm -rf "${website_dir:-~}/$xray_domain"
 	mkdir -p "$website_dir/$xray_domain"
 	wget -O web.tar.gz https://github.com/jiuqi9997/Xray-yes/raw/main/web.tar.gz
 	tar xzvf web.tar.gz -C "$website_dir/$xray_domain"
@@ -554,12 +554,12 @@ finish() {
 	echo -e "$Green Xray 配置信息 $Font" | tee $info_file
 	echo -e "$Green 地址 (address): $Font $server_ip " | tee -a $info_file
 	echo -e "$Green 端口 (port): $Font $port " | tee -a $info_file
-	echo -e "$Green 用户id (UUID/密码): $Font $uuid" | tee -a $info_file
+	echo -e "$Green 用户id (UUID/密码): $Font ${passwd:-$uuid}" | tee -a $info_file
 	echo -e "$Green 流控 (flow): $Font $xray_flow" | tee -a $info_file
 	echo -e "$Green SNI: $Font $xray_domain" | tee -a $info_file
 	echo -e "$Green TLS: $Font ${RedBG}XTLS${Font}" | tee -a $info_file
 	echo ""
-	echo -e "$Green 分享链接:$Font vless://$(xray uuid -i '$uuid')@$server_ip:$port?flow=xtls-rprx-direct&security=xtls&sni=$xray_domain#$xray_domain" | tee -a $info_file
+	echo -e "$Green 分享链接:$Font vless://${$uuid:-$uuidv5}@$server_ip:$port?flow=xtls-rprx-direct&security=xtls&sni=$xray_domain#$xray_domain" | tee -a $info_file
 	echo ""
 	echo -e "${GreenBG} 提示：${Font}您可以在 Linux 平台上使用流控 ${RedBG}xtls-rprx-splice${Font} 以获得更好的性能。"
 }
@@ -590,9 +590,9 @@ mod_uuid() {
 	uuid_old=$(jq '.inbounds[].settings.clients[].id' $xray_conf || fail=1)
 	[[ $(echo "$uuid_old" | jq '' | wc -l) -gt 1 ]] && error "有多个 UUID，请自行修改"
 	uuid_old=$(echo "$uuid_old" | sed 's/\"//g')
-	read -rp "请输入 Xray 密码（默认使用 UUID）：" uuid
-	[[ -z $uuid ]] && uuid=$(xray uuid)
-	sed -i "s/$uuid_old/$uuid/g" $xray_conf $info_file
+	read -rp "请输入 Xray 密码（默认使用 UUID）：" passwd
+	[[ -z $passwd ]] && uuid=$(xray uuid) || uuidv5=$(xray uuid -i "$passwd")
+	sed -i "s/$uuid_old/${uuid:-uuidv5}/g" $xray_conf $info_file
 	grep -q "$uuid" $xray_conf && success "UUID 修改成功" || error "UUID 修改失败"
 	sleep 2
 	xray_restart

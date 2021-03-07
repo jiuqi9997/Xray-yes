@@ -195,7 +195,8 @@ prepare_installation() {
 	else
 		error "Please enter a correct number"
 	fi
-	read -rp "Please enter the passwd for xray (default UUID): " uuid
+	read -rp "Please enter the passwd for xray (default UUID): " passwd
+	[[ -z $passwd ]] && uuid=$(xray uuid) || uuidv5=$(xray uuid -i "$passwd")
 	read -rp "Please enter the port for xray (default 443): " port
 	[[ -z $port ]] && port=443
 	[[ $port -gt 65535 ]] && echo "Please enter a correct port" && install_all
@@ -402,7 +403,6 @@ generate_certificate() {
 }
 
 configure_xray() {
-	[[ -z $uuid ]] && uuid=$(xray uuid)
 	xray_flow="xtls-rprx-direct"
 	cat > $xray_conf << EOF
 {
@@ -437,7 +437,7 @@ configure_xray() {
             "settings": {
                 "clients": [
                     {
-                        "id": "$uuid",
+                        "id": "${passwd:-$uuid}",
                         "flow": "$xray_flow"
                     }
                 ],
@@ -499,7 +499,7 @@ xray_restart() {
 }
 
 configure_nginx() {
-	rm -rf "${website_dir:-}/$xray_domain"
+	rm -rf "${website_dir:-~}/$xray_domain"
 	mkdir -p "$website_dir/$xray_domain"
 	wget -O web.tar.gz https://github.com/jiuqi9997/Xray-yes/raw/main/web.tar.gz
 	tar xzvf web.tar.gz -C "$website_dir/$xray_domain"
@@ -554,12 +554,12 @@ finish() {
 	echo -e "$Green Xray configuration $Font" | tee $info_file
 	echo -e "$Green Address: $Font $server_ip " | tee -a $info_file
 	echo -e "$Green Port: $Font $port " | tee -a $info_file
-	echo -e "$Green UUID/Passwd: $Font $uuid" | tee -a $info_file
+	echo -e "$Green UUID/Passwd: $Font ${passwd:-$uuid}" | tee -a $info_file
 	echo -e "$Green Flow: $Font $xray_flow" | tee -a $info_file
 	echo -e "$Green SNI: $Font $xray_domain" | tee -a $info_file
 	echo -e "$Green TLS: $Font ${RedBG}XTLS${Font}" | tee -a $info_file
 	echo ""
-	echo -e "$Green Share link: $Font vless://$(xray uuid -i '$uuid')@$server_ip:$port?flow=xtls-rprx-direct&security=xtls&sni=$xray_domain#$xray_domain" | tee -a $info_file
+	echo -e "$Green Share link: $Font vless://$uuidv5:-$uuid}@$server_ip:$port?flow=xtls-rprx-direct&security=xtls&sni=$xray_domain#$xray_domain" | tee -a $info_file
 	echo ""
 	echo -e "${GreenBG} Tip: ${Font}You can use flow control ${RedBG}xtls-rprx-splice${Font} on the Linux platform to get better performance."
 }
@@ -590,9 +590,9 @@ mod_uuid() {
 	uuid_old=$(jq '.inbounds[].settings.clients[].id' $xray_conf || fail=1)
 	[[ $(echo "$uuid_old" | jq '' | wc -l) -gt 1 ]] && error "There are multiple UUIDs, please modify by yourself"
 	uuid_old=$(echo "$uuid_old" | sed 's/\"//g')
-	read -rp "Please enter the password for Xray (default UUID): " uuid
-	[[ -z $uuid ]] && uuid=$(xray uuid)
-	sed -i "s/$uuid_old/$uuid/g" $xray_conf $info_file
+	read -rp "Please enter the password for Xray (default UUID): " passwd
+	[[ -z $passwd ]] && uuid=$(xray uuid) || uuidv5=$(xray uuid -i "$passwd")
+	sed -i "s/$uuid_old/${uuid:-$uuidv5}/g" $xray_conf $info_file
 	grep -q "$uuid" $xray_conf && success "Successfully modified the UUID" || error "Failed to modify the UUID"
 	sleep 2
 	xray_restart
