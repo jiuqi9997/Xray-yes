@@ -7,7 +7,7 @@
 
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 stty erase ^?
-script_version="1.1.68"
+script_version="1.1.69"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf.d"
 website_dir="/home/wwwroot"
@@ -400,9 +400,10 @@ EOF
 
 generate_certificate() {
 	info "Generating a self-signed certificate"
-	openssl genrsa -out $cert_dir/self_signed_key.pem 2048
-	openssl req -new -x509 -days 3650 -key $cert_dir/self_signed_key.pem -out $cert_dir/self_signed_cert.pem -subj "/CN=$server_ip"
-	[[ ! -f $cert_dir/self_signed_cert.pem || ! -f $cert_dir/self_signed_key.pem ]] && error "Failed to generate a self-signed certificate"
+	signedcert=$(xray tls cert -domain="$server_ip" -name="$server_ip" -org="$server_ip")
+	echo $signedcert | jq '.certificate[]' | sed 's/\"//g' | tee $cert_dir/self_signed_cert.pem
+	echo $signedcert | jq '.key[]' | sed 's/\"//g' > $cert_dir/self_signed_key.pem
+	openssl x509 -in $cert_dir/self_signed_key.pem -noout || error "Failed to generate a self-signed certificate"
 	success "Successfully generated a self-signed certificate"
 }
 
