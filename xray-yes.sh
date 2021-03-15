@@ -7,7 +7,7 @@
 
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 stty erase ^?
-script_version="1.1.71"
+script_version="1.1.72"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf.d"
 website_dir="/home/wwwroot"
@@ -348,7 +348,7 @@ install_acme() {
 
 install_xray() {
 	info "正在安装 Xray"
-	curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s - install
+	bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" - install
 	ps aux | grep -q xray || error "Xray 安装失败"
 	success "Xray 安装成功"
 }
@@ -570,14 +570,20 @@ finish() {
 }
 
 update_xray() {
-	curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s - install
+	bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" - install
+	ps aux | grep -q xray || error "Xray 更新失败"
+	success "Xray 更新成功"
+}
+
+install_xray_beta() {
+	bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" - install --beta
 	ps aux | grep -q xray || error "Xray 更新失败"
 	success "Xray 更新成功"
 }
 
 uninstall_all() {
 	get_info
-	curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh | bash -s - remove --purge
+	bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" - remove --purge
 	systemctl stop nginx
 	if [[ $ID == "debian" || $ID == "ubuntu" ]]; then
 		$PM purge -y nginx
@@ -650,19 +656,20 @@ menu() {
 	echo -e "  ${Green}0.${Font} 升级 脚本"
 	echo -e "  ${Green}1.${Font} 安装 Xray (VLESS+tcp+xtls+nginx)"
 	echo -e "  ${Green}2.${Font} 升级 Xray core"
-	echo -e "  ${Green}3.${Font} 卸载 Xray&nginx"
+	echo -e "  ${Green}3.${Font} 安装 Xray core 测试版(Pre)"
+	echo -e "  ${Green}4.${Font} 卸载 Xray&nginx"
 	echo -e " ---------------------------------------"
-	echo -e "  ${Green}4.${Font} 修改 UUID"
-	echo -e "  ${Green}5.${Font} 修改 端口"
+	echo -e "  ${Green}5.${Font} 修改 UUID"
+	echo -e "  ${Green}6.${Font} 修改 端口"
 	echo -e " ---------------------------------------"
-	echo -e "  ${Green}6.${Font} 查看 实时访问日志"
-	echo -e "  ${Green}7.${Font} 查看 实时错误日志"
-	echo -e "  ${Green}8.${Font} 查看 Xray 配置信息"
-	echo -e "  ${Green}9.${Font} 重启 Xray"
+	echo -e "  ${Green}7.${Font} 查看 实时访问日志"
+	echo -e "  ${Green}8.${Font} 查看 实时错误日志"
+	echo -e "  ${Green}9.${Font} 查看 Xray 配置信息"
+	echo -e "  ${Green}10.${Font} 重启 Xray"
 	echo -e " ---------------------------------------"
-	echo -e "  ${Green}10.${Font} Switch to English"
+	echo -e "  ${Green}11.${Font} Switch to English"
 	echo ""
-	echo -e "  ${Green}11.${Font} 退出"
+	echo -e "  ${Green}12.${Font} 退出"
 	echo ""
 	read -rp "请输入数字：" choice
 	case $choice in
@@ -676,30 +683,33 @@ menu() {
 		update_xray
 		;;
 	3)
-		uninstall_all
+		install_xray_beta
 		;;
 	4)
-		mod_uuid
+		uninstall_all
 		;;
 	5)
-		mod_port
+		mod_uuid
 		;;
 	6)
-		show_access_log
+		mod_port
 		;;
 	7)
-		show_error_log
+		show_access_log
 		;;
 	8)
-		show_configuration
+		show_error_log
 		;;
 	9)
-		xray_restart
+		show_configuration
 		;;
 	10)
-		switch_to_en
+		xray_restart
 		;;
 	11)
+		switch_to_en
+		;;
+	12)
 		exit 0
 		;;
 	*)
