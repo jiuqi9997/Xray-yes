@@ -7,7 +7,7 @@
 
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 stty erase ^?
-script_version="1.1.72"
+script_version="1.1.73"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf.d"
 website_dir="/home/wwwroot"
@@ -100,7 +100,7 @@ prepare_installation() {
 	[[ -z $ip_type ]] && ip_type=1
 	if [[ $ip_type -eq 1 ]]; then
 		domain_ip=$(ping -4 "$xray_domain" -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
-		server_ip=$(curl -sL https://api64.ipify.org -4 || fail=1)
+		server_ip=$(curl -sL https://api64.ipify.org -4) || fail=1
 		[[ $fail -eq 1 ]] && error "Failed to get local IP address"
 		[[ "$server_ip" == "$domain_ip" ]] && success "The domain name has been resolved to the local IP address" && success=1
 		if [[ $success -ne 1 ]]; then
@@ -124,7 +124,7 @@ prepare_installation() {
 		fi
 	elif [[ $ip_type -eq 2 ]]; then
 		domain_ip=$(ping -6 "$xray_domain" -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
-		server_ip=$(curl -sL https://api64.ipify.org -6 || fail=1)
+		server_ip=$(curl -sL https://api64.ipify.org -6) || fail=1
 		[[ $fail -eq 1 ]] && error "Failed to get the local IP address"
 		[[ "$server_ip" == "$domain_ip" ]] && success "The domain name has been resolved to the local IP address" && success=1
 		if [[ $success -ne 1 ]]; then
@@ -148,7 +148,7 @@ prepare_installation() {
 		fi
 	elif [[ $ip_type -eq 3 ]]; then
 		domain_ip=$(ping -4 "$xray_domain" -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
-		server_ip=$(curl -sL https://api64.ipify.org -4 || fail=1)
+		server_ip=$(curl -sL https://api64.ipify.org -4) || fail=1
 		[[ $fail -eq 1 ]] && error "Failed to get the local IP address (IPv4)"
 		[[ "$server_ip" == "$domain_ip" ]] && success "The domain name has been resolved to the local IP address (IPv4)" && success=1
 		if [[ $success -ne 1 ]]; then
@@ -171,7 +171,7 @@ prepare_installation() {
 			esac
 		fi
 		domain_ip6=$(ping -6 "$xray_domain" -c 1 | sed '1{s/[^(]*(//;s/).*//;q}')
-		server_ip6=$(curl https://api64.ipify.org -6 || fail=1)
+		server_ip6=$(curl -sL https://api64.ipify.org -6) || fail=1
 		[[ $fail -eq 1 ]] && error "Failed to get the local IP address (IPv6)"
 		[[ "$server_ip" == "$domain_ip" ]] && success "The domain name has been resolved to the local IP address (IPv6)" && success=1
 		if [[ $success -ne 1 ]]; then
