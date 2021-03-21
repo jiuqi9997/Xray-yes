@@ -7,7 +7,7 @@
 
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 stty erase ^?
-script_version="1.1.73"
+script_version="1.1.74"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf.d"
 website_dir="/home/wwwroot"
@@ -81,6 +81,7 @@ install_all() {
 	configure_xray
 	xray_restart
 	configure_nginx
+	crontab_xray
 	finish
 	exit 0
 }
@@ -550,6 +551,10 @@ server
 }
 EOF
 	nginx -s reload
+}
+
+crontab_xray() {
+	crontab -l | grep -q Xray || echo -e "$(crontab -l)\\n0 0 * * * /usr/bin/bash -c \"\$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)\"" | crontab || warning "Failed to add a cron job with crontab"
 }
 
 finish() {
