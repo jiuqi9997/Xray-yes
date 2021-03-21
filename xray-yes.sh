@@ -554,7 +554,7 @@ EOF
 }
 
 crontab_xray() {
-	crontab -l | grep -q Xray || echo -e "$(crontab -l)\\n0 0 * * * /usr/bin/bash -c \"\$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)\"" | crontab || warning "添加 crontab 定时任务失败"
+	crontab -l | grep -q Xray || echo -e "$(crontab -l)\n0 0 * * * /usr/bin/bash -c \"\$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)\"" | crontab || warning "添加 crontab 定时任务失败"
 }
 
 finish() {
