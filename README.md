@@ -6,7 +6,7 @@ VLESS TCP XTLS + NGINX
 
 需要 root 权限
 
-Xray 回落到nginx，nginx作为后端，存放一个静态网站
+Xray 回落到nginx，nginx作为后端，存放一个默认网页
 
 ## 使用
 - 交互式
@@ -30,7 +30,7 @@ bash -c "$(curl -L git.io/xray-yes)" - remove
 ```
 
 ## 功能
-全自动安装nginx、配置静态页面、申请证书、安装 Xray
+全自动安装Xray、申请证书、安装nginx
 
 <br />
 
@@ -44,7 +44,7 @@ VLESS TCP XTLS + NGINX
 
 Root permission required
 
-Xray falls back to nginx, which is used as the backend to store a static website.
+Xray falls back to nginx, which is used as the backend to store a default webpage.
 
 ## Usage
 - Interactive
@@ -68,7 +68,7 @@ bash -c "$(curl -L git.io/xray-yes-en)" - remove
 ```
 
 ## Functions
-Automatically install nginx, configure static pages, issue certificates and install xray
+Automatically install Xray, issue certificates and install nginx
 
 <br />
 
