@@ -7,7 +7,7 @@
 
 export PATH="$PATH:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 stty erase ^?
-script_version="1.1.75"
+script_version="1.1.76"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf.d"
 website_dir="/home/wwwroot"
@@ -507,9 +507,9 @@ xray_restart() {
 configure_nginx() {
 	rm -rf "${website_dir:-~}/$xray_domain"
 	mkdir -p "$website_dir/$xray_domain"
-	wget -O web.tar.gz https://github.com/jiuqi9997/Xray-yes/raw/main/web.tar.gz
-	tar xzvf web.tar.gz -C "$website_dir/$xray_domain"
-	rm -rf web.tar.gz
+	wget -O "$website_dir/$xray_domain/index.html" https://github.com/jiuqi9997/Xray-yes/raw/main/web.html
+	chown nginx:nginx -R "$website_dir"
+	chmod 700 -R "$website_dir"
 	cat > "$nginx_conf_dir/$xray_domain.conf" <<EOF
 server
 {
