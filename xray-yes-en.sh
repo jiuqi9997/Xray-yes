@@ -7,7 +7,7 @@
 
 export PATH="$PATH:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 stty erase ^?
-script_version="1.1.76"
+script_version="1.1.77"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf.d"
 website_dir="/home/wwwroot"
@@ -338,6 +338,7 @@ http {
 EOF
 	systemctl enable nginx
 	systemctl start nginx
+	ps aux | grep nginx || error "Failed to install Nginx"
 	success "Successfully installed the packages"
 }
 
@@ -387,7 +388,7 @@ server
 	error_log /dev/null;
 }
 EOF
-	nginx -s reload
+	nginx -s reload || error "Failed to configure Nginx"
 	/root/.acme.sh/acme.sh --issue -d "$xray_domain" --keylength ec-256 --fullchain-file $cert_dir/cert.pem --key-file $cert_dir/key.pem --webroot "$website_dir/$xray_domain" --renew-hook "systemctl restart xray" --force || error "Failed to issue a ssl certificate"
 	success "Successfully issued a ssl certificate"
 	generate_certificate
