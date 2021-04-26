@@ -7,7 +7,7 @@
 
 export PATH="$PATH:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 stty erase ^?
-script_version="1.1.77"
+script_version="1.1.78"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf.d"
 website_dir="/home/wwwroot"
@@ -609,7 +609,7 @@ mod_uuid() {
 	uuid_old=$(echo "$uuid_old" | sed 's/\"//g')
 	read -rp "请输入 Xray 密码（默认使用 UUID）：" passwd
 	generate_uuid
-	sed -i "s/$uuid_old/${uuid:-uuidv5}/g" $xray_conf $info_file
+	sed -i "s/$uuid_old/${uuid:-$uuidv5}/g" $xray_conf $info_file
 	grep -q "$uuid" $xray_conf && success "UUID 修改成功" || error "UUID 修改失败"
 	sleep 2
 	xray_restart
