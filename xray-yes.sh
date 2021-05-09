@@ -7,7 +7,7 @@
 
 export PATH="$PATH:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 stty erase ^?
-script_version="1.1.78"
+script_version="1.1.79"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf.d"
 website_dir="/home/wwwroot"
@@ -391,22 +391,12 @@ EOF
 	nginx -s reload || error "Nginx 配置失败"
 	/root/.acme.sh/acme.sh --issue -d "$xray_domain" --keylength ec-256 --fullchain-file $cert_dir/cert.pem --key-file $cert_dir/key.pem --webroot "$website_dir/$xray_domain" --renew-hook "systemctl restart xray" --force || error "证书申请失败"
 	success "证书申请成功"
-	generate_certificate
 	chmod 600 $cert_dir/*.pem
 	if id nobody | grep -q nogroup; then
 		chown nobody:nogroup $cert_dir/*.pem
 	else
 		chown nobody:nobody $cert_dir/*.pem
 	fi
-}
-
-generate_certificate() {
-	info "正在生成自签名证书"
-	signedcert=$(xray tls cert -domain="$server_ip" -name="$server_ip" -org="$server_ip" -expire=87600h)
-	echo $signedcert | jq '.certificate[]' | sed 's/\"//g' | tee $cert_dir/self_signed_cert.pem
-	echo $signedcert | jq '.key[]' | sed 's/\"//g' > $cert_dir/self_signed_key.pem
-	openssl x509 -in $cert_dir/self_signed_cert.pem -noout || error "生成自签名证书失败"
-	success "生成自签名证书成功"
 }
 
 configure_xray() {
@@ -466,11 +456,8 @@ configure_xray() {
                 "security": "xtls",
                 "xtlsSettings": {
                     "minVersion": "1.2",
+                    "rejectUnknownSni": true,
                     "certificates": [
-                        {
-                            "certificateFile": "$cert_dir/self_signed_cert.pem",
-                            "keyFile": "$cert_dir/self_signed_key.pem"
-                        },
                         {
                             "certificateFile": "$cert_dir/cert.pem",
                             "keyFile": "$cert_dir/key.pem"
