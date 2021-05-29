@@ -7,7 +7,7 @@
 
 export PATH="$PATH:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 stty erase ^?
-script_version="1.1.79"
+script_version="1.1.80"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf.d"
 website_dir="/home/wwwroot"
@@ -338,7 +338,7 @@ http {
 EOF
 	systemctl enable nginx
 	systemctl start nginx
-	ps aux | grep nginx || error "Nginx 启动失败"
+	ps -ef | sed '/grep/d' | grep -q nginx || error "Nginx 启动失败"
 	success "软件包安装成功"
 }
 
@@ -351,7 +351,7 @@ install_acme() {
 install_xray() {
 	info "正在安装 Xray"
 	bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" - install
-	ps aux | grep -q xray || error "Xray 安装失败"
+	ps -ef | sed '/grep/d' | grep -q xray || error "Xray 安装失败"
 	success "Xray 安装成功"
 }
 
@@ -487,7 +487,7 @@ EOF
 
 xray_restart() {
 	systemctl restart xray
-	ps aux | grep -q xray || error "Xray 重启失败"
+	ps -ef | sed '/grep/d' | grep -q xray || error "Xray 重启失败"
 	success "Xray 重启成功"
 	sleep 2
 }
@@ -564,13 +564,13 @@ finish() {
 
 update_xray() {
 	bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" - install
-	ps aux | grep -q xray || error "Xray 更新失败"
+	ps -ef | sed '/grep/d' | grep -q xray || error "Xray 更新失败"
 	success "Xray 更新成功"
 }
 
 install_xray_beta() {
 	bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" - install --beta
-	ps aux | grep -q xray || error "Xray 更新失败"
+	ps -ef | sed '/grep/d' | grep -q xray || error "Xray 更新失败"
 	success "Xray 更新成功"
 }
 
@@ -619,15 +619,15 @@ mod_port() {
 }
 
 show_access_log() {
-	[[ -f $xray_access_log ]] && tail -f $xray_access_log || panic "文件不存在"
+	[[ -e $xray_access_log ]] && tail -e $xray_access_log || panic "文件不存在"
 }
 
 show_error_log() {
-	[[ -f $xray_error_log ]] && tail -f $xray_error_log || panic "文件不存在"
+	[[ -e $xray_error_log ]] && tail -e $xray_error_log || panic "文件不存在"
 }
 
 show_configuration() {
-	[[ -f $info_file ]] && cat $info_file && exit 0
+	[[ -e $info_file ]] && cat $info_file && exit 0
 	panic "配置信息不存在"
 }
 

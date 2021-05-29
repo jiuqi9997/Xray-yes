@@ -7,7 +7,7 @@
 
 export PATH="$PATH:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 stty erase ^?
-script_version="1.1.79"
+script_version="1.1.80"
 nginx_dir="/etc/nginx"
 nginx_conf_dir="/etc/nginx/conf.d"
 website_dir="/home/wwwroot"
@@ -338,7 +338,7 @@ http {
 EOF
 	systemctl enable nginx
 	systemctl start nginx
-	ps aux | grep nginx || error "Failed to install Nginx"
+	ps -ef | sed '/grep/d' | grep -q nginx || error "Failed to install Nginx"
 	success "Successfully installed the packages"
 }
 
@@ -351,7 +351,7 @@ install_acme() {
 install_xray() {
 	info "Installing Xray"
 	bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" - install
-	ps aux | grep -q xray || error "Failed to install Xray"
+	ps -ef | sed '/grep/d' | grep -q xray || error "Failed to install Xray"
 	success "Successfully installed Xray"
 }
 
@@ -487,7 +487,7 @@ EOF
 
 xray_restart() {
 	systemctl restart xray
-	ps aux | grep -q xray || error "Failed to restart Xray"
+	ps -ef | sed '/grep/d' | grep -q xray || error "Failed to restart Xray"
 	success "Successfully restarted Xray"
 	sleep 2
 }
@@ -564,13 +564,13 @@ finish() {
 
 update_xray() {
 	bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" - install
-	ps aux | grep -q xray || error "Failed to update Xray"
+	ps -ef | sed '/grep/d' | grep -q xray || error "Failed to update Xray"
 	success "Successfully updated Xray"
 }
 
 install_xray_beta() {
 	bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" - install --beta
-	ps aux | grep -q xray || error "Failed to update Xray"
+	ps -ef | sed '/grep/d' | grep -q xray || error "Failed to update Xray"
 	success "Successfully updated Xray"
 }
 
@@ -619,15 +619,15 @@ mod_port() {
 }
 
 show_access_log() {
-	[[ -f $xray_access_log ]] && tail -f $xray_access_log || panic "The file doesn't exist"
+	[[ -e $xray_access_log ]] && tail -e $xray_access_log || panic "The file doesn't exist"
 }
 
 show_error_log() {
-	[[ -f $xray_error_log ]] && tail -f $xray_error_log || panic "The file doesn't exist"
+	[[ -e $xray_error_log ]] && tail -e $xray_error_log || panic "The file doesn't exist"
 }
 
 show_configuration() {
-	[[ -f $info_file ]] && cat $info_file && exit 0
+	[[ -e $info_file ]] && cat $info_file && exit 0
 	panic "The info file doesn't exist"
 }
 
