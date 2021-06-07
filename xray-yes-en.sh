@@ -7,10 +7,7 @@
 
 export PATH="$PATH:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 stty erase ^?
-script_version="1.1.80"
-nginx_dir="/etc/nginx"
-nginx_conf_dir="/etc/nginx/conf.d"
-website_dir="/home/wwwroot"
+script_version="1.1.81"
 xray_dir="/usr/local/etc/xray"
 xray_log_dir="/var/log/xray"
 xray_access_log="$xray_log_dir/access.log"
@@ -80,7 +77,6 @@ install_all() {
 	issue_certificate
 	configure_xray
 	xray_restart
-	configure_nginx
 	crontab_xray
 	finish
 	exit 0
@@ -202,12 +198,6 @@ prepare_installation() {
 	[[ -z $port ]] && port=443
 	[[ $port -gt 65535 ]] && echo "Please enter a correct port" && install_all
 	configure_firewall
-	nport=$(rand 10000 20000)
-	nport1=$(expr $nport + 1)
-	while ss -tnlp | grep -q ":$nport " || ss -tnlp | grep -q ":$nport1 "; do
-		nport=$(rand 10000 20000)
-		nport1=$(expr $nport + 1)
-	done
 	success "Everything is ready, the installation is about to start."
 }
 
@@ -257,13 +247,6 @@ configure_firewall() {
 	fi
 }
 
-rand() {
-	min=$1
-	max=$(($2-$min+1))
-	num=$(cat /dev/urandom | head -n 10 | cksum | awk -F ' ' '{print $1}')
-	echo $(($num%$max+$min))
-}
-
 check_env() {
 	if ss -tnlp | grep -q ":80 "; then
 		error "Port 80 is occupied (it's required for certificate application)"
@@ -277,68 +260,21 @@ check_env() {
 
 install_packages() {
 	info "Installing the software packages"
-	rpm_packages="tar zip unzip openssl lsof git jq socat nginx crontabs"
-	apt_packages="tar zip unzip openssl lsof git jq socat nginx cron"
+	rpm_packages="tar zip unzip openssl lsof git jq socat crontabs"
+	apt_packages="tar zip unzip openssl lsof git jq socat cron"
 	if [[ $PM == "apt-get" ]]; then
 		$PM update
-		$INS wget curl gnupg2 ca-certificates dmidecode lsb-release
+		$INS wget curl ca-certificates
 		update-ca-certificates
-		echo "deb http://nginx.org/packages/$ID $(lsb_release -cs) nginx" | tee /etc/apt/sources.list.d/nginx.list
-		curl -fsSL https://nginx.org/keys/nginx_signing.key | apt-key add -
 		$PM update
 		$INS $apt_packages
 	elif [[ $PM == "yum" || $PM == "dnf" ]]; then
 		sed -i 's/SELINUX=enforcing/SELINUX=disabled/' /etc/selinux/config
 		setenforce 0
-		cat > /etc/yum.repos.d/nginx.repo <<EOF
-[nginx-stable]
-name=nginx stable repo
-baseurl=http://nginx.org/packages/centos/\$releasever/\$basearch/
-gpgcheck=1
-enabled=1
-gpgkey=https://nginx.org/keys/nginx_signing.key
-module_hotfixes=true
-EOF
-		$INS wget curl ca-certificates dmidecode epel-release
+		$INS wget curl ca-certificates epel-release
 		update-ca-trust force-enable
 		$INS $rpm_packages
 	fi
-	mkdir -p $nginx_dir
-	cat > $nginx_dir/nginx.conf <<EOF
-worker_processes  auto;
-
-error_log  /var/log/nginx/error.log warn;
-pid        /var/run/nginx.pid;
-
-
-events {
-    worker_connections  1024;
-}
-
-
-http {
-    include       /etc/nginx/mime.types;
-    default_type  application/octet-stream;
-
-    log_format  main  '\$remote_addr - \$remote_user [\$time_local] "\$request" '
-                      '\$status \$body_bytes_sent "\$http_referer" '
-                      '"\$http_user_agent" "\$http_x_forwarded_for"';
-
-    access_log  /var/log/nginx/access.log  main;
-
-    sendfile        on;
-    tcp_nopush     on;
-
-    keepalive_timeout  65;
-
-    gzip  on;
-
-    include $nginx_conf_dir/*.conf;
-}
-EOF
-	systemctl enable nginx
-	systemctl start nginx
-	ps -ef | sed '/grep/d' | grep -q nginx || error "Failed to install Nginx"
 	success "Successfully installed the packages"
 }
 
@@ -361,35 +297,14 @@ generate_uuid() {
 
 issue_certificate() {
 	info "Issuing a ssl certificate"
-	mkdir -p $nginx_conf_dir
-	mkdir -p "$website_dir/$xray_domain"
-	touch "$website_dir/$xray_domain/index.html"
-	cat > "$nginx_conf_dir/default.conf" << EOF
-server
-{
-	listen 80 default_server;
-	listen [::]:80 default_server;
-
-	return 444;
-
-	access_log /dev/null;
-	error_log /dev/null;
-}
-EOF
-	cat > "$nginx_conf_dir/$xray_domain.conf" <<EOF
-server
-{
-	listen 80;
-	listen [::]:80;
-	server_name $xray_domain;
-	root $website_dir/$xray_domain;
-
-	access_log /dev/null;
-	error_log /dev/null;
-}
-EOF
-	nginx -s reload || error "Failed to configure Nginx"
-	/root/.acme.sh/acme.sh --issue -d "$xray_domain" --keylength ec-256 --fullchain-file $cert_dir/cert.pem --key-file $cert_dir/key.pem --webroot "$website_dir/$xray_domain" --renew-hook "systemctl restart xray" --force || error "Failed to issue a ssl certificate"
+	/root/.acme.sh/acme.sh --issue \
+		-d "$xray_domain" \
+		--keylength ec-256 \
+		--fullchain-file $cert_dir/cert.pem \
+		--key-file $cert_dir/key.pem \
+		--standalone \
+		--renew-hook "systemctl restart xray" \
+		--force || error "Failed to issue a ssl certificate"
 	success "Successfully issued a ssl certificate"
 	chmod 600 $cert_dir/*.pem
 	if id nobody | grep -q nogroup; then
@@ -400,87 +315,75 @@ EOF
 }
 
 configure_xray() {
-	xray_flow="xtls-rprx-direct"
+	xtls_flow="xtls-rprx-direct"
 	cat > $xray_conf << EOF
 {
-    "log": {
-        "access": "$xray_access_log",
-        "error": "$xray_error_log",
-        "loglevel": "warning"
-    },
-    "routing": {
-        "domainStrategy": "AsIs",
-        "rules": [
-            {
-                "type": "field",
-                "ip": [
-                    "geoip:private"
-                ],
-                "outboundTag": "block"
-            },
-            {
-                "type": "field",
-                "domain": [
-                    "geosite:category-ads-all"
-                ],
-                "outboundTag": "block"
-            }
-        ]
-    },
-    "inbounds": [
-        {
-            "port": $port,
-            "protocol": "vless",
-            "settings": {
-                "clients": [
-                    {
-                        "id": "${passwd:-$uuid}",
-                        "flow": "$xray_flow"
-                    }
-                ],
-                "decryption": "none",
-                "fallbacks": [
-                    {
-                        "dest": $nport,
-                        "xver": 1
-                    },
-                    {
-                        "dest": $nport1,
-                        "alpn": "h2",
-                        "xver": 1
-                    }
-                ]
-            },
-            "streamSettings": {
-                "network": "tcp",
-                "security": "xtls",
-                "xtlsSettings": {
-                    "minVersion": "1.2",
-                    "rejectUnknownSni": true,
-                    "certificates": [
-                        {
-                            "certificateFile": "$cert_dir/cert.pem",
-                            "keyFile": "$cert_dir/key.pem"
-                        }
-                    ]
-                }
-            },
-            "sniffing": {
-                "enabled": true,
-                "destOverride": ["http","tls"]
-            }
-        }
-    ],
-    "outbounds": [
-        {
-            "tag": "direct",
-            "protocol": "freedom"
-        },
-        {
-            "tag": "block",
-            "protocol": "blackhole"
-        }
+  "log": {
+    "access": "$xray_access_log",
+    "error": "$xray_error_log",
+    "loglevel": "warning"
+  },
+  "routing": {
+    "domainStrategy": "AsIs",
+    "rules": [
+      {
+        "type": "field",
+        "ip": [
+          "geoip:private"
+        ],
+        "outboundTag": "block"
+      },
+      {
+        "type": "field",
+        "domain": [
+          "geosite:category-ads-all"
+        ],
+        "outboundTag": "block"
+      }
     ]
+  },
+  "inbounds": [
+    {
+      "port": $port,
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          {
+            "id": "${passwd:-$uuid}",
+            "flow": "$xtls_flow"
+          }
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "xtls",
+        "xtlsSettings": {
+          "minVersion": "1.2",
+          "certificates": [
+            {
+              "certificateFile": "$cert_dir/cert.pem",
+              "keyFile": "$cert_dir/key.pem"
+            }
+          ]
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http","tls"]
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "tag": "direct",
+      "protocol": "freedom"
+    },
+    {
+      "tag": "block",
+      "protocol": "blackhole"
+    }
+  ]
 }
 EOF
 }
@@ -492,72 +395,23 @@ xray_restart() {
 	sleep 2
 }
 
-configure_nginx() {
-	rm -rf "${website_dir:-~}/$xray_domain"
-	mkdir -p "$website_dir/$xray_domain"
-	wget -O "$website_dir/$xray_domain/web.html" https://github.com/jiuqi9997/Xray-yes/raw/main/web.html
-	chown nginx:nginx -R "$website_dir"
-	chmod 700 -R "$website_dir"
-	cat > "$nginx_conf_dir/$xray_domain.conf" <<EOF
-server
-{
-	listen 80;
-	listen [::]:80;
-	server_name $xray_domain;
-	return 301 https://\$http_host\$request_uri;
-
-	access_log  /dev/null;
-	error_log  /dev/null;
-}
-
-server
-{
-	listen $nport default_server;
-	listen [::]:$nport default_server;
-	listen $nport1 http2 default_server;
-	listen [::]:$nport1 http2 default_server;
-
-	return 444;
-
-	access_log /dev/null;
-	error_log /dev/null;
-}
-
-server
-{
-	listen $nport proxy_protocol;
-	listen [::]:$nport proxy_protocol;
-	listen $nport1 http2 proxy_protocol;
-	listen [::]:$nport1 http2 proxy_protocol;
-	server_name $xray_domain;
-	index index.html;
-	root $website_dir/$xray_domain;
-	add_header Strict-Transport-Security "max-age=31536000" always;
-
-	access_log  /dev/null;
-	error_log  /dev/null;
-}
-EOF
-	nginx -s reload
-}
-
 crontab_xray() {
 	crontab -l | grep -q Xray || echo -e "$(crontab -l)\n0 0 * * * /usr/bin/bash -c \"\$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)\"" | crontab || warning "Failed to add a cron job with crontab"
 }
 
 finish() {
-	success "Successfully installed Xray (VLESS+tcp+xtls+nginx)"
+	success "Successfully installed Xray (VLESS TCP XTLS)"
 	echo ""
 	echo ""
 	echo -e "$Green Xray configuration $Font" | tee $info_file
 	echo -e "$Green Address: $Font $server_ip " | tee -a $info_file
 	echo -e "$Green Port: $Font $port " | tee -a $info_file
 	echo -e "$Green UUID/Passwd: $Font ${passwd:-$uuid}" | tee -a $info_file
-	echo -e "$Green Flow: $Font $xray_flow" | tee -a $info_file
+	echo -e "$Green Flow: $Font $xtls_flow" | tee -a $info_file
 	echo -e "$Green SNI: $Font $xray_domain" | tee -a $info_file
 	echo -e "$Green TLS: $Font ${RedBG}XTLS${Font}" | tee -a $info_file
 	echo ""
-	echo -e "$Green Share link: $Font vless://${uuidv5:-$uuid}@$server_ip:$port?flow=xtls-rprx-direct&security=xtls&sni=$xray_domain#$xray_domain" | tee -a $info_file
+	echo -e "$Green Share link: $Font vless://${uuidv5:-$uuid}@$server_ip:$port?flow=$xtls_flow&security=xtls&sni=$xray_domain#$xray_domain" | tee -a $info_file
 	echo ""
 	echo -e "${GreenBG} Tip: ${Font}You can use flow control ${RedBG}xtls-rprx-splice${Font} on the Linux platform to get better performance."
 }
@@ -577,16 +431,8 @@ install_xray_beta() {
 uninstall_all() {
 	get_info
 	bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" - remove --purge
-	systemctl stop nginx
-	if [[ $ID == "debian" || $ID == "ubuntu" ]]; then
-		$PM purge -y nginx
-	else
-		$PM remove -y nginx
-	fi
-	rm -rf $nginx_dir
-	rm -rf $website_dir
 	rm -rf $info_file
-	success "Uninstalled Xray and nginx"
+	success "Uninstalled Xray-core"
 	exit 0
 }
 
@@ -647,10 +493,10 @@ menu() {
 	echo ""
 	echo -e " ---------------------------------------"
 	echo -e "  ${Green}0.${Font} Update the script"
-	echo -e "  ${Green}1.${Font} Install Xray (VLESS+tcp+xtls+nginx)"
-	echo -e "  ${Green}2.${Font} Update Xray core"
+	echo -e "  ${Green}1.${Font} Install Xray (VLESS TCP XTLS)"
+	echo -e "  ${Green}2.${Font} Update Xray-core"
 	echo -e "  ${Green}3.${Font} Install Xray core beta (Pre)"
-	echo -e "  ${Green}4.${Font} Uninstall Xray&nginx"
+	echo -e "  ${Green}4.${Font} Uninstall Xray-core"
 	echo -e " ---------------------------------------"
 	echo -e "  ${Green}5.${Font} Modify the UUID"
 	echo -e "  ${Green}6.${Font} Modify the port"

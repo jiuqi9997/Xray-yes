@@ -2,11 +2,9 @@
 ###
 又一个安装 Xray 的shell脚本
 
-VLESS TCP XTLS + NGINX
+VLESS TCP XTLS
 
 需要 root 权限
-
-Xray 回落到nginx，nginx作为后端，存放一个默认网页
 
 ## 使用
 - 交互式
@@ -30,7 +28,7 @@ bash -c "$(curl -L git.io/xray-yes)" - remove
 ```
 
 ## 功能
-全自动安装Xray、申请证书、安装nginx
+全自动安装Xray、申请证书、定时更新
 
 <br />
 
@@ -40,11 +38,9 @@ bash -c "$(curl -L git.io/xray-yes)" - remove
 ###
 Another shell script to install Xray
 
-VLESS TCP XTLS + NGINX
+VLESS TCP XTLS
 
 Root permission required
-
-Xray falls back to nginx, which is used as the backend to store a default webpage.
 
 ## Usage
 - Interactive
@@ -68,7 +64,7 @@ bash -c "$(curl -L git.io/xray-yes-en)" - remove
 ```
 
 ## Functions
-Automatically install Xray, issue certificates and install nginx
+Automatically install Xray, issue certificates and configure crontab for updates
 
 <br />
 
