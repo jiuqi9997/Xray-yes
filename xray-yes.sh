@@ -7,7 +7,7 @@
 
 export PATH="$PATH:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 stty erase ^?
-script_version="1.1.81"
+script_version="1.1.82"
 xray_dir="/usr/local/etc/xray"
 xray_log_dir="/var/log/xray"
 xray_access_log="$xray_log_dir/access.log"
@@ -287,7 +287,7 @@ install_acme() {
 install_xray() {
 	info "正在安装 Xray"
 	bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" - install
-	ps -ef | sed '/grep/d' | grep -q xray || error "Xray 安装失败"
+	ps -ef | sed '/grep/d' | grep -q bin/xray || error "Xray 安装失败"
 	success "Xray 安装成功"
 }
 
@@ -390,7 +390,7 @@ EOF
 
 xray_restart() {
 	systemctl restart xray
-	ps -ef | sed '/grep/d' | grep -q xray || error "Xray 重启失败"
+	ss -tnlp | grep ":443 " || error "Xray 重启失败"
 	success "Xray 重启成功"
 	sleep 2
 }
@@ -418,13 +418,13 @@ finish() {
 
 update_xray() {
 	bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" - install
-	ps -ef | sed '/grep/d' | grep -q xray || error "Xray 更新失败"
+	ps -ef | sed '/grep/d' | grep -q bin/xray || error "Xray 更新失败"
 	success "Xray 更新成功"
 }
 
 install_xray_beta() {
 	bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" - install --beta
-	ps -ef | sed '/grep/d' | grep -q xray || error "Xray 更新失败"
+	ps -ef | sed '/grep/d' | grep -q bin/xray || error "Xray 更新失败"
 	success "Xray 更新成功"
 }
 
