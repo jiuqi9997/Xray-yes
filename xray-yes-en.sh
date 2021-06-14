@@ -7,7 +7,7 @@
 
 export PATH="$PATH:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 stty erase ^?
-script_version="1.1.83"
+script_version="1.1.84"
 xray_dir="/usr/local/etc/xray"
 xray_log_dir="/var/log/xray"
 xray_access_log="$xray_log_dir/access.log"
@@ -299,11 +299,11 @@ issue_certificate() {
 	info "Issuing a ssl certificate"
 	/root/.acme.sh/acme.sh --issue \
 		-d "$xray_domain" \
+		--server letsencrypt \
 		--keylength ec-256 \
 		--fullchain-file $cert_dir/cert.pem \
 		--key-file $cert_dir/key.pem \
 		--standalone \
-		--renew-hook "systemctl restart xray" \
 		--force || error "Failed to issue a ssl certificate"
 	success "Successfully issued a ssl certificate"
 	chmod 600 $cert_dir/*.pem
