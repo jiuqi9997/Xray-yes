@@ -7,7 +7,7 @@
 
 export PATH="$PATH:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 stty erase ^?
-script_version="1.1.82"
+script_version="1.1.83"
 xray_dir="/usr/local/etc/xray"
 xray_log_dir="/var/log/xray"
 xray_access_log="$xray_log_dir/access.log"
@@ -390,7 +390,7 @@ EOF
 
 xray_restart() {
 	systemctl restart xray
-	ss -tnlp | grep ":443 " || error "Xray 重启失败"
+	ps -ef | sed '/grep/d' | grep -q bin/xray || error "Xray 重启失败"
 	success "Xray 重启成功"
 	sleep 2
 }
@@ -465,11 +465,11 @@ mod_port() {
 }
 
 show_access_log() {
-	[[ -e $xray_access_log ]] && tail -e $xray_access_log || panic "文件不存在"
+	[[ -e $xray_access_log ]] && tail -f $xray_access_log || panic "文件不存在"
 }
 
 show_error_log() {
-	[[ -e $xray_error_log ]] && tail -e $xray_error_log || panic "文件不存在"
+	[[ -e $xray_error_log ]] && tail -f $xray_error_log || panic "文件不存在"
 }
 
 show_configuration() {
